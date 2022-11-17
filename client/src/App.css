@@ -1,0 +1,16 @@
+.leaflet-container{
+
+    width: 100vw;
+    height: 80vh;
+}
+
+.results.active{
+
+    background: white !important;
+}
+
+.leaflet-touch .leaflet-bar a{
+
+    width: 100% !important;
+    height: 0 !important;
+}
