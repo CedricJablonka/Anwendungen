@@ -11,3 +11,4 @@ export const CHANGE_SHOW_STREET_DETAIL_INFORMATION = "change_show_street_detail_
 export const CHANGE_STREET_CLICKED_POSITION = "change_street_clicked_position"
 export const CHANGE_STREET_DETAILS_DATA = "change_street_details_data"
 export const CHANGE_IS_LOADING_STREET_DETAILS_DATA = "change_is_loading_street_details_data"
+export const CHANGE_USER_MESSAGE = "change_user_message"
