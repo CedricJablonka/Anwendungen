@@ -7,7 +7,8 @@ import {
   CHANGE_STREET_CLICKED_POSITION,
   CHANGE_SHOW_STREET_DETAIL_INFORMATION,
   CHANGE_STREET_DETAILS_DATA,
-  CHANGE_IS_LOADING_STREET_DETAILS_DATA
+  CHANGE_IS_LOADING_STREET_DETAILS_DATA,
+  CHANGE_ALL_EDITED_STREETS_WITHIN_CITY,
 } from "../types";
 
 const GeneralReducer = (prevState, { type, payload }) => {
@@ -18,11 +19,11 @@ const GeneralReducer = (prevState, { type, payload }) => {
         isLoadingStreetData: !prevState.isLoadingStreetData,
       };
     case FETCH_STREET_DATA:
-      console.log(payload)
+      console.log(payload);
       return {
         ...prevState,
         streetData: payload,
-        isLoadingStreetData: false
+        isLoadingStreetData: false,
       };
     case CHANGE_HIGHWAY_TYPE_SELECTION:
       //payload is an object that holds the name of the selected highway type
@@ -40,37 +41,35 @@ const GeneralReducer = (prevState, { type, payload }) => {
       };
     // This is merely an example. wouldn't be here for long
     case CHANGE_USER_LOCATION_INFO:
-      return{
+      return {
         ...prevState,
-        userLocationInfo: payload
-      }
+        userLocationInfo: payload,
+      };
 
     case CHANGE_SHOW_STREET_DETAIL_INFORMATION:
       return {
         ...prevState,
-        showStreetDetailInformation: payload
+        showStreetDetailInformation: payload,
       };
 
     case CHANGE_STREET_CLICKED_POSITION:
-      console.log(payload)
-      return{
+      console.log(payload);
+      return {
         ...prevState,
-        streetClickedPosition: payload
-      }
+        streetClickedPosition: payload,
+      };
 
-      case CHANGE_STREET_DETAILS_DATA:
-
-      return{
+    case CHANGE_STREET_DETAILS_DATA:
+      return {
         ...prevState,
-        streetDetailsData: payload
-      }
+        streetDetailsData: payload,
+      };
 
-      case CHANGE_IS_LOADING_STREET_DETAILS_DATA:
-
-      return{
+    case CHANGE_IS_LOADING_STREET_DETAILS_DATA:
+      return {
         ...prevState,
-        isLoadingStreetDetailsData: payload
-      }
+        isLoadingStreetDetailsData: payload,
+      };
 
     case UPDATE_OVERPASS_QUERY:
       console.log(payload);
@@ -79,6 +78,11 @@ const GeneralReducer = (prevState, { type, payload }) => {
         overpassQuery: payload,
       };
 
+    case CHANGE_ALL_EDITED_STREETS_WITHIN_CITY:
+      return {
+        ...prevState,
+        allEditedStreetsInCity: payload,
+      };
     default:
       return prevState;
   }

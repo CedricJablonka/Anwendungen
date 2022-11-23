@@ -1,6 +1,6 @@
 export var streetDetailsData= {
     hasValues: false,
-    streetID: "",
+    streetId: "",
     layerStructure: "",
     mass: "",
     material: "",

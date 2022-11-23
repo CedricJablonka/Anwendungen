@@ -12,15 +12,15 @@ const MyGeoJson = (props) => {
     getStreetDetailsData(streetId);
     setIsClicked(true);
   };
-
-  const { data, children, streetId } = props;
+  
+  const { data, children, streetId, style } = props;
   const { changeStreetClickedPosition, getStreetDetailsData } = useContext(GeneralContext);
   return (
     <>
       <GeoJSON
         data={data}
         eventHandlers={{ click: handleOnClick }}
-        style={isClicked ? styleClicked : styleUnclicked}
+        style={style}
       >
         {children}
       </GeoJSON>
