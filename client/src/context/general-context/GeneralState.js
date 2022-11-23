@@ -7,6 +7,7 @@ import { streetDetailsData } from "../../constants/streetDetailsData";
 import {
   STREET_GET_DETAILS_URL,
   SEND_STREET_DETAILS_URL,
+  GET_ALL_STREET_DETAILS_WITHIN_City_URL,
 } from "../../constants/serverConfigs";
 
 import {
@@ -19,7 +20,7 @@ import {
   CHANGE_STREET_CLICKED_POSITION,
   CHANGE_STREET_DETAILS_DATA,
   CHANGE_IS_LOADING_STREET_DETAILS_DATA,
-  CHANGE_USER_MESSAGE,
+  CHANGE_ALL_EDITED_STREETS_WITHIN_CITY,
 } from "../types";
 import { overpassHighwayTypes } from "../../constants/overpassHighwayTypes";
 
@@ -35,7 +36,7 @@ const GeneralState = ({ children }) => {
     clickedPosition: {},
     isLoadingStreetData: false,
     isLoadingStreetDetailsData: true,
-    userMessage: { messageType: "", message: "" },
+    allEditedStreetsInCity: {},
     userLocationInfo: {
       lat: "",
       long: "",
@@ -159,6 +160,27 @@ out skel qt; */
     dispatch({ type: CHANGE_SHOW_STREET_DETAIL_INFORMATION, payload: true });
   };
 
+  const getAllEditedStreetsInCity = async (position) => {
+    /*this functions takes a latitude and a longitude stored in a postion array and returns
+    it will find the odm id that matches the given coordinates and will find the nearest city that
+    to that coordinate. Then it will return all edited streets in this city.*/
+    const osmId = await getOsmIdByCoordinates(position[0], position[1]);
+    const city = await getCity(osmId, "N");
+    try {
+      const returnedData = await axios.get(
+        GET_ALL_STREET_DETAILS_WITHIN_City_URL + `${encodeURIComponent(city)}`,
+        headers
+      );
+
+      dispatch({
+        type: CHANGE_ALL_EDITED_STREETS_WITHIN_CITY,
+        payload: returnedData.data,
+      });
+    } catch (error) {
+      console.log(error.message);
+    }
+  };
+
   const getStreetDetailsData = async (streetId) => {
     /*function to perform the api call for retrieving the street details for one particular street part by id */
 
@@ -195,8 +217,6 @@ out skel qt; */
       [fieldToChange]: newValue,
     };
 
-    console.log(updatedStreetDetails);
-
     dispatch({
       type: CHANGE_STREET_DETAILS_DATA,
       payload: updatedStreetDetails,
@@ -206,12 +226,14 @@ out skel qt; */
   const sendStreetDetailsData = async (streetId) => {
     /*TODO return if streetDetailsData is empty*/
 
+    //In order to not interfere with the copy and paste functionality unique properties like latlng, city and street id will be added in this
     //add latlng, cityName the street is located (for filtering all modified streets within a city) and the osm streetid
     let preparedStreetDetailsData = {
       ...state.streetDetailsData,
       streetId: streetId,
       latlng: state.streetClickedPosition.latlng,
       city: await getCity(streetId, "W"),
+      osmDetails: await getOsmStreetInformation(streetId),
     };
 
     try {
@@ -222,37 +244,34 @@ out skel qt; */
         },
         headers
       );
-      changeUserMessage("SUCCESS", response.data.message);
-
-      dispatch({ type: CHANGE_IS_LOADING_STREET_DETAILS_DATA, payload: true });
+      showUserMessage({
+        message: response.data.message,
+        messageType: "SUCCESS",
+      });
     } catch (error) {
-      changeUserMessage("ERROR", error.message);
-
-      dispatch({ type: CHANGE_IS_LOADING_STREET_DETAILS_DATA, payload: true });
+      showUserMessage({ message: error.message, messageType: "ERROR" });
     }
   };
 
   /*********** utility ********************************/
-  const changeUserMessage = (messageType, message) => {
-    dispatch({
-      type: CHANGE_USER_MESSAGE,
-      payload: { messageType: messageType, message: message },
-    });
-  };
-  const showUserMessage = () => {
-    if (state.userMessage.messageType === "SUCCESS") {
-      toaster.success(state.userMessage.message);
-    } else if (state.userMessage.messageType === "ERROR") {
-      toaster.danger(state.userMessage.message);
+  const showUserMessage = (props) => {
+    const { messageType, message } = props;
+
+    if (messageType === "SUCCESS") {
+      toaster.success(message);
+    } else if (messageType === "ERROR") {
+      toaster.danger(message);
+    } else {
+      toaster.danger(message);
     }
   };
   const ChangeIsLoadingStreetDetailsData = (status) => {
     dispatch({ type: CHANGE_IS_LOADING_STREET_DETAILS_DATA, payload: status });
   };
-
+  /*********** get all street details within a city ********************************/
   const getCity = async (streetId, osmType) => {
     /*https://nominatim.openstreetmap.org/reverse?format=xml&osm_type=W&osm_id=206488036
-    based on a given streetId / osmId find the city in which a way is located
+    based on a given streetId / osmId find the city in which a way or a node is located
      */
 
     try {
@@ -263,13 +282,75 @@ out skel qt; */
         headers
       );
 
-      console.log(returnedData.data.address.city);
       return returnedData.data.address.city;
     } catch (error) {
       console.log(error.message);
     }
   };
 
+  const getOsmIdByCoordinates = async (lat, lng) => {
+    try {
+      const returnedData = await axios.get(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(
+          lat
+        )}&lon=${encodeURIComponent(lng)}`,
+        headers
+      );
+      return returnedData.data.osm_id;
+    } catch (error) {}
+  };
+
+  const getOsmStreetInformation = async (streetId) => {
+    /*https://api.openstreetmap.org/api/0.6/way/515641498 */
+    try {
+      const returnedXmlData = await axios.get(
+        `https://api.openstreetmap.org/api/0.6/way/${streetId}`,
+        headers
+      );
+
+      return returnedXmlData.data.elements[0];
+    } catch (error) {
+      showUserMessage({ messageType: "ERROR", message: error.message });
+    }
+  };
+
+  /**********************************************copy and paste street detail data to clipboard************************************************** */
+  const copyStreetDetailData = async (streetDetailData) => {
+    if ("clipboard" in navigator) {
+      await navigator.clipboard.writeText(JSON.stringify(streetDetailData));
+      showUserMessage({
+        messageType: "SUCCESS",
+        message: "Copied Street Details Data!",
+      });
+    } else {
+      showUserMessage({
+        messageType: "ERROR",
+        message: "Clipboard API not supported!",
+      });
+    }
+  };
+
+  const pasteStreetDetailData = async () => {
+    try {
+      const pastedData = await navigator.clipboard.readText();
+
+      //there is some room where street id, city and latlng from the old street details are copied and pasted as well
+      //this has no effect on the functionality but it is not the best style
+      dispatch({
+        type: CHANGE_STREET_DETAILS_DATA,
+        payload: JSON.parse(pastedData),
+      });
+      showUserMessage({
+        messageType: "SUCCESS",
+        message: "Pasted Street Detail Data Succesfully!",
+      });
+    } catch (error) {
+      showUserMessage({
+        messageType: "ERROR",
+        message: error.message,
+      });
+    }
+  };
   return (
     <GeneralContext.Provider
       value={{
@@ -283,6 +364,10 @@ out skel qt; */
         changeStreetDetailsData: changeStreetDetailsData,
         sendStreetDetailsData: sendStreetDetailsData,
         showUserMessage: showUserMessage,
+        getOsmIdByCoordinates: getOsmIdByCoordinates,
+        getAllEditedStreetsInCity: getAllEditedStreetsInCity,
+        copyStreetDetailData: copyStreetDetailData,
+        pasteStreetDetailData: pasteStreetDetailData,
         userLocationInfo: state.userLocationInfo,
         streetData: state.streetData,
         highwayTypes: state.overpassHighwayTypes,
@@ -291,6 +376,7 @@ out skel qt; */
         showStreetDetailInformation: state.showStreetDetailInformation,
         streetClickedPosition: state.streetClickedPosition,
         streetDetailsData: state.streetDetailsData,
+        allEditedStreetsInCity: state.allEditedStreetsInCity,
       }}
     >
       {children}

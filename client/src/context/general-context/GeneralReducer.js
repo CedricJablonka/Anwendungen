@@ -8,7 +8,7 @@ import {
   CHANGE_SHOW_STREET_DETAIL_INFORMATION,
   CHANGE_STREET_DETAILS_DATA,
   CHANGE_IS_LOADING_STREET_DETAILS_DATA,
-  CHANGE_USER_MESSAGE,
+  CHANGE_ALL_EDITED_STREETS_WITHIN_CITY,
 } from "../types";
 
 const GeneralReducer = (prevState, { type, payload }) => {
@@ -78,11 +78,10 @@ const GeneralReducer = (prevState, { type, payload }) => {
         overpassQuery: payload,
       };
 
-    case CHANGE_USER_MESSAGE:
-
+    case CHANGE_ALL_EDITED_STREETS_WITHIN_CITY:
       return {
         ...prevState,
-        userMessage: payload,
+        allEditedStreetsInCity: payload,
       };
     default:
       return prevState;

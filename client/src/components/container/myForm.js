@@ -1,4 +1,4 @@
-import { Pane, Button, Spinner, toaster } from "evergreen-ui";
+import { Pane, Button, Spinner, ClipboardIcon, IconButton, majorScale, InsertIcon } from "evergreen-ui";
 import { streetFormFieldData } from "../../constants/streetFormFieldData";
 import MyInput from "../inputs/myInput";
 import { useContext } from "react";
@@ -10,16 +10,24 @@ const MyForm = (props) => {
     streetDetailsData,
     isLoadingStreetDetailsData,
     sendStreetDetailsData,
-    showUserMessage
+    showUserMessage,
+    copyStreetDetailData,
+    pasteStreetDetailData
   } = useContext(GeneralContext);
 
   console.log(streetDetailsData);
 
+  const handleCopy = () => {
+    copyStreetDetailData(streetDetailsData);
+  }
+
+  const handlePaste = () => {
+    pasteStreetDetailData()
+  }
+
   const handleSubmit = (e) => {
-    console.log("hello");
     e.preventDefault();
     sendStreetDetailsData(streetId);
-    showUserMessage();
   };
   return (
     <>
@@ -42,6 +50,8 @@ const MyForm = (props) => {
             <Button appearance="primary" onClick={handleSubmit}>
               Submit
             </Button>
+            <IconButton icon={ClipboardIcon} onClick={handleCopy} marginLeft={majorScale(2)} />
+            <IconButton icon={InsertIcon} onClick={handlePaste} marginLeft={majorScale(2)} />
           </Pane>
         </Pane>
       ) : (
