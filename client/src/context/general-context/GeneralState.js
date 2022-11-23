@@ -317,6 +317,13 @@ out skel qt; */
   /**********************************************copy and paste street detail data to clipboard************************************************** */
   const copyStreetDetailData = async (streetDetailData) => {
     if ("clipboard" in navigator) {
+      delete streetDetailData._id;
+      delete streetDetailData.streetId;
+      delete streetDetailData.latlng;
+      delete streetDetailData.city;
+      delete streetDetailData.osmDetails;
+
+      console.log(streetDetailData)
       await navigator.clipboard.writeText(JSON.stringify(streetDetailData));
       showUserMessage({
         messageType: "SUCCESS",
