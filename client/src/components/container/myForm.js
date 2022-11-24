@@ -4,6 +4,7 @@ import MyInput from "../inputs/myInput";
 import { useContext } from "react";
 import GeneralContext from "../../context/general-context/GeneralContext";
 
+
 const MyForm = (props) => {
   const { streetId } = props;
   const {
@@ -14,8 +15,6 @@ const MyForm = (props) => {
     copyStreetDetailData,
     pasteStreetDetailData
   } = useContext(GeneralContext);
-
-  console.log(streetDetailsData);
 
   const handleCopy = () => {
     copyStreetDetailData(streetDetailsData);

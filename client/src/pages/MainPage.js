@@ -17,7 +17,6 @@ const MainPage = () => {
     allEditedStreetsInCity,
   } = useContext(GeneralContext);
   const position = [51.4818111, 7.2196635];
-
   useEffect(() => {
     getAllEditedStreetsInCity([51.4818111, 7.2196635]);
 
@@ -52,6 +51,7 @@ const MainPage = () => {
               key={singleFeature.id}
               streetId={streetId}
               style={streetId in allEditedStreetsInCity ?{color: 'red'}: {} }
+
             ></MyGeoJson>
           );
         })}

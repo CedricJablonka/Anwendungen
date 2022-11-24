@@ -317,6 +317,7 @@ out skel qt; */
   /**********************************************copy and paste street detail data to clipboard************************************************** */
   const copyStreetDetailData = async (streetDetailData) => {
     if ("clipboard" in navigator) {
+      //this delete statements is very ugly code should be refactored in the future
       delete streetDetailData._id;
       delete streetDetailData.streetId;
       delete streetDetailData.latlng;
