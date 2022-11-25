@@ -9,6 +9,8 @@ import {
   CHANGE_STREET_DETAILS_DATA,
   CHANGE_IS_LOADING_STREET_DETAILS_DATA,
   CHANGE_ALL_EDITED_STREETS_WITHIN_CITY,
+  ADD_GEO_JSON_REF,
+  CHANGE_GEO_JSON_COLOR_MAP
 } from "../types";
 
 const GeneralReducer = (prevState, { type, payload }) => {
@@ -19,7 +21,6 @@ const GeneralReducer = (prevState, { type, payload }) => {
         isLoadingStreetData: !prevState.isLoadingStreetData,
       };
     case FETCH_STREET_DATA:
-      console.log(payload);
       return {
         ...prevState,
         streetData: payload,
@@ -53,7 +54,6 @@ const GeneralReducer = (prevState, { type, payload }) => {
       };
 
     case CHANGE_STREET_CLICKED_POSITION:
-      console.log(payload);
       return {
         ...prevState,
         streetClickedPosition: payload,
@@ -83,6 +83,14 @@ const GeneralReducer = (prevState, { type, payload }) => {
         ...prevState,
         allEditedStreetsInCity: payload,
       };
+    case CHANGE_GEO_JSON_COLOR_MAP:
+      console.log(payload);
+      return{
+        ...prevState,
+        geoJsonColorMap: payload
+      }
+    case ADD_GEO_JSON_REF:
+      return { ...prevState, geoJSONRef: payload };
     default:
       return prevState;
   }

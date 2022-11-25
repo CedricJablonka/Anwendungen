@@ -1,4 +1,4 @@
-import React, { useReducer } from "react";
+import React, { useReducer, useRef } from "react";
 import { toaster } from "evergreen-ui";
 import GeneralContext from "./GeneralContext";
 import GeneralReducer from "./GeneralReducer";
@@ -21,6 +21,8 @@ import {
   CHANGE_STREET_DETAILS_DATA,
   CHANGE_IS_LOADING_STREET_DETAILS_DATA,
   CHANGE_ALL_EDITED_STREETS_WITHIN_CITY,
+  ADD_GEO_JSON_REF,
+  CHANGE_GEO_JSON_COLOR_MAP,
 } from "../types";
 import { overpassHighwayTypes } from "../../constants/overpassHighwayTypes";
 
@@ -37,6 +39,8 @@ const GeneralState = ({ children }) => {
     isLoadingStreetData: false,
     isLoadingStreetDetailsData: true,
     allEditedStreetsInCity: {},
+    geoJsonRefs: new Map(),
+    geoJsonColorsMap: new Map(),
     userLocationInfo: {
       lat: "",
       long: "",
@@ -82,6 +86,10 @@ const GeneralState = ({ children }) => {
       console.log("all nodes: ",osmtogeojson({...returnedData.data, elements: nodeElements}))
       console.log("all ways: ",osmtogeojson({...returnedData.data, elements: wayElements}))*/
 
+      createGeoJsonColorMap({
+        geoJsonData: geoJsonConversion,
+        color: "#3388ff",
+      });
       dispatch({
         type: FETCH_STREET_DATA,
         payload: geoJsonConversion,
@@ -162,7 +170,7 @@ out skel qt; */
 
   const getAllEditedStreetsInCity = async (position) => {
     /*this functions takes a latitude and a longitude stored in a postion array and returns
-    it will find the odm id that matches the given coordinates and will find the nearest city that
+    it will find the osm id that matches the given coordinates and will find the nearest city that
     to that coordinate. Then it will return all edited streets in this city.*/
     const osmId = await getOsmIdByCoordinates(position[0], position[1]);
     const city = await getCity(osmId, "N");
@@ -184,18 +192,14 @@ out skel qt; */
   const getStreetDetailsData = async (streetId) => {
     /*function to perform the api call for retrieving the street details for one particular street part by id */
 
-    console.log(streetId);
-
     try {
       dispatch({ type: CHANGE_IS_LOADING_STREET_DETAILS_DATA, payload: true });
-      console.log(STREET_GET_DETAILS_URL + `/${encodeURIComponent(streetId)}`);
+
       const streetDetailsData = await axios.get(
         STREET_GET_DETAILS_URL + `/${encodeURIComponent(streetId)}`,
         { streetId: streetId },
         headers
       );
-
-      console.log(streetDetailsData);
 
       dispatch({
         type: CHANGE_STREET_DETAILS_DATA,
@@ -205,8 +209,6 @@ out skel qt; */
       dispatch({ type: CHANGE_IS_LOADING_STREET_DETAILS_DATA, payload: false });
     } catch (error) {
       dispatch({ type: CHANGE_IS_LOADING_STREET_DETAILS_DATA, payload: false });
-
-      console.log(error.message);
     }
   };
 
@@ -265,6 +267,34 @@ out skel qt; */
       toaster.danger(message);
     }
   };
+
+  //this is just a helper function to avoid repeating
+  const changeGeoJsonColor = (props) => {
+    const { streetId, color } = props;
+    let tmpGeoJsonColorMap = state.geoJsonColorMap;
+    tmpGeoJsonColorMap.set(streetId, color);
+    dispatch({
+      type: CHANGE_GEO_JSON_COLOR_MAP,
+      payload: tmpGeoJsonColorMap,
+    });
+  };
+
+  const createGeoJsonColorMap = (props) => {
+    const { geoJsonData, color } = props;
+
+    let tmpGeoJsonColorMap = new Map();
+
+    geoJsonData?.features.map((singleFeature) => {
+      let streetId = singleFeature.id.split("/")[1];
+
+      tmpGeoJsonColorMap.set(streetId, { color: color });
+    });
+
+    dispatch({ type: CHANGE_GEO_JSON_COLOR_MAP, payload: tmpGeoJsonColorMap });
+
+    
+  };
+
   const ChangeIsLoadingStreetDetailsData = (status) => {
     dispatch({ type: CHANGE_IS_LOADING_STREET_DETAILS_DATA, payload: status });
   };
@@ -303,15 +333,21 @@ out skel qt; */
   const getOsmStreetInformation = async (streetId) => {
     /*https://api.openstreetmap.org/api/0.6/way/515641498 */
     try {
-      const returnedXmlData = await axios.get(
+      const returnedData = await axios.get(
         `https://api.openstreetmap.org/api/0.6/way/${streetId}`,
         headers
       );
 
-      return returnedXmlData.data.elements[0];
+      return returnedData.data.elements[0];
     } catch (error) {
       showUserMessage({ messageType: "ERROR", message: error.message });
     }
+  };
+
+  const getOsmStreetName = async (streetId) => {
+    const returnedData = await getOsmStreetInformation(streetId);
+    console.log(returnedData.tags.name);
+    return returnedData.tags.name;
   };
 
   /**********************************************copy and paste street detail data to clipboard************************************************** */
@@ -324,7 +360,7 @@ out skel qt; */
       delete streetDetailData.city;
       delete streetDetailData.osmDetails;
 
-      console.log(streetDetailData)
+      console.log(streetDetailData);
       await navigator.clipboard.writeText(JSON.stringify(streetDetailData));
       showUserMessage({
         messageType: "SUCCESS",
@@ -359,6 +395,22 @@ out skel qt; */
       });
     }
   };
+
+  /*********************************************************************geo json refs************** */
+
+  const addGeoJsonRef = (key, ref) => {
+    const refMap = state.geoJsonRefs.set(key, ref);
+
+    dispatch({ type: ADD_GEO_JSON_REF, payload: refMap });
+
+    return ref;
+  };
+
+  const getGeoJsonRef = (key) => {
+    return state.geoJsonRefs.get(key);
+  };
+  /****************************************geo json color map utility */
+
   return (
     <GeneralContext.Provider
       value={{
@@ -376,6 +428,10 @@ out skel qt; */
         getAllEditedStreetsInCity: getAllEditedStreetsInCity,
         copyStreetDetailData: copyStreetDetailData,
         pasteStreetDetailData: pasteStreetDetailData,
+        addGeoJsonRef: addGeoJsonRef,
+        getGeoJsonRef: getGeoJsonRef,
+        getOsmStreetName: getOsmStreetName,
+        changeGeoJsonColor: changeGeoJsonColor,
         userLocationInfo: state.userLocationInfo,
         streetData: state.streetData,
         highwayTypes: state.overpassHighwayTypes,
@@ -385,6 +441,7 @@ out skel qt; */
         streetClickedPosition: state.streetClickedPosition,
         streetDetailsData: state.streetDetailsData,
         allEditedStreetsInCity: state.allEditedStreetsInCity,
+        geoJsonColorMap: state.geoJsonColorMap,
       }}
     >
       {children}
