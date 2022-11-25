@@ -1,9 +1,17 @@
-import { Pane, Button, Spinner, ClipboardIcon, IconButton, majorScale, InsertIcon } from "evergreen-ui";
+import {
+  Pane,
+  Button,
+  Spinner,
+  ClipboardIcon,
+  IconButton,
+  majorScale,
+  InsertIcon,
+} from "evergreen-ui";
 import { streetFormFieldData } from "../../constants/streetFormFieldData";
 import MyInput from "../inputs/myInput";
-import { useContext } from "react";
+import { useContext, useState, useEffect } from "react";
 import GeneralContext from "../../context/general-context/GeneralContext";
-
+import { useMapEvents } from "react-leaflet";
 
 const MyForm = (props) => {
   const { streetId } = props;
@@ -11,18 +19,33 @@ const MyForm = (props) => {
     streetDetailsData,
     isLoadingStreetDetailsData,
     sendStreetDetailsData,
-    showUserMessage,
     copyStreetDetailData,
-    pasteStreetDetailData
+    pasteStreetDetailData,
+    getOsmStreetName,
+    changeGeoJsonColor,
   } = useContext(GeneralContext);
+
+  const [streetName, setStreetName] = useState("");
+
+  //these map events are used to highlight and dehighlight a street depending if it is selected or not
+  const map = useMapEvents({
+    popupopen: (e) => {
+      changeGeoJsonColor({ streetId: streetId, color: "orange" });
+      console.log("open");
+    },
+    popupclose: (e) => {
+      changeGeoJsonColor({ streetId: streetId, color: "#3388ff" });
+      console.log("close");
+    },
+  });
 
   const handleCopy = () => {
     copyStreetDetailData(streetDetailsData);
-  }
+  };
 
   const handlePaste = () => {
-    pasteStreetDetailData()
-  }
+    pasteStreetDetailData();
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -49,8 +72,16 @@ const MyForm = (props) => {
             <Button appearance="primary" onClick={handleSubmit}>
               Submit
             </Button>
-            <IconButton icon={ClipboardIcon} onClick={handleCopy} marginLeft={majorScale(2)} />
-            <IconButton icon={InsertIcon} onClick={handlePaste} marginLeft={majorScale(2)} />
+            <IconButton
+              icon={ClipboardIcon}
+              onClick={handleCopy}
+              marginLeft={majorScale(2)}
+            />
+            <IconButton
+              icon={InsertIcon}
+              onClick={handlePaste}
+              marginLeft={majorScale(2)}
+            />
           </Pane>
         </Pane>
       ) : (

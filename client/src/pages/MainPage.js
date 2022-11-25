@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from "react";
+import React, { useContext, useEffect, useRef } from "react";
 import { MapContainer, TileLayer, Marker } from "react-leaflet";
 import GeoSearchBox from "../components/map-uis/GeoSearchBox";
 import { OpenStreetMapProvider } from "leaflet-geosearch";
@@ -15,14 +15,15 @@ const MainPage = () => {
     streetClickedPosition,
     getAllEditedStreetsInCity,
     allEditedStreetsInCity,
+    geoJsonColorMap
   } = useContext(GeneralContext);
   const position = [51.4818111, 7.2196635];
-  useEffect(() => {
-    getAllEditedStreetsInCity([51.4818111, 7.2196635]);
 
+  useEffect(() => {
     
+    getAllEditedStreetsInCity([51.4818111, 7.2196635]);
   }, []);
-  console.log(allEditedStreetsInCity)
+
   return (
     <>
       <StreetTypeSelection />
@@ -34,7 +35,10 @@ const MainPage = () => {
         />
         <GeoSearchBox provider={new OpenStreetMapProvider()} />
         {showStreetDetailInformation && (
-          <MyPopup position={streetClickedPosition.latlng}>
+          <MyPopup
+            position={streetClickedPosition.latlng}
+            streetId={streetClickedPosition.streetId}
+          >
             <MyForm streetId={streetClickedPosition.streetId} />
           </MyPopup>
         )}
@@ -50,8 +54,7 @@ const MainPage = () => {
               data={singleFeature}
               key={singleFeature.id}
               streetId={streetId}
-              style={streetId in allEditedStreetsInCity ?{color: 'red'}: {} }
-
+          style={geoJsonColorMap?.get(streetId)}
             ></MyGeoJson>
           );
         })}
