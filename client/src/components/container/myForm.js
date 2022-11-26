@@ -23,6 +23,8 @@ const MyForm = (props) => {
     pasteStreetDetailData,
     getOsmStreetName,
     changeGeoJsonColor,
+    geoJsonColorMap,
+    allEditedStreetsInCity,
   } = useContext(GeneralContext);
 
   const [streetName, setStreetName] = useState("");
@@ -34,7 +36,10 @@ const MyForm = (props) => {
       console.log("open");
     },
     popupclose: (e) => {
-      changeGeoJsonColor({ streetId: streetId, color: "#3388ff" });
+      streetId in allEditedStreetsInCity
+        ? changeGeoJsonColor({ streetId: streetId, color: "green" })
+        : changeGeoJsonColor({ streetId: streetId, color: "#3388ff" });
+
       console.log("close");
     },
   });

@@ -15,7 +15,6 @@ const MainPage = () => {
     streetClickedPosition,
     getAllEditedStreetsInCity,
     allEditedStreetsInCity,
-    geoJsonColorMap
   } = useContext(GeneralContext);
   const position = [51.4818111, 7.2196635];
 
@@ -54,7 +53,7 @@ const MainPage = () => {
               data={singleFeature}
               key={singleFeature.id}
               streetId={streetId}
-          style={geoJsonColorMap?.get(streetId)}
+              style={streetId in allEditedStreetsInCity ? { color: "green" } : {}}
             ></MyGeoJson>
           );
         })}
