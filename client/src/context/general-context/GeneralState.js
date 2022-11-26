@@ -30,7 +30,6 @@ const GeneralState = ({ children }) => {
   const initialState = {
     streetData: [],
     streetDetailsData: streetDetailsData,
-    userSearchLocation: [],
     overpassHighwayTypes: overpassHighwayTypes,
     overpassQuery: "",
     showStreetDetailInformation: false,
@@ -42,8 +41,8 @@ const GeneralState = ({ children }) => {
     geoJsonRefs: new Map(),
     geoJsonColorsMap: new Map(),
     userLocationInfo: {
-      lat: "",
-      long: "",
+      lat: 51.4818111,
+      lng: 7.2196635,
       label: "",
       bounds: [
         [51.4105043, 7.1020817],
@@ -86,7 +85,7 @@ const GeneralState = ({ children }) => {
       console.log("all nodes: ",osmtogeojson({...returnedData.data, elements: nodeElements}))
       console.log("all ways: ",osmtogeojson({...returnedData.data, elements: wayElements}))*/
 
-      createGeoJsonColorMap({
+      await createGeoJsonColorMap({
         geoJsonData: geoJsonConversion,
         color: "#3388ff",
       });
@@ -173,7 +172,9 @@ out skel qt; */
     it will find the osm id that matches the given coordinates and will find the nearest city that
     to that coordinate. Then it will return all edited streets in this city.*/
     const osmId = await getOsmIdByCoordinates(position[0], position[1]);
+
     const city = await getCity(osmId, "N");
+
     try {
       const returnedData = await axios.get(
         GET_ALL_STREET_DETAILS_WITHIN_City_URL + `${encodeURIComponent(city)}`,
@@ -184,6 +185,8 @@ out skel qt; */
         type: CHANGE_ALL_EDITED_STREETS_WITHIN_CITY,
         payload: returnedData.data,
       });
+
+      return returnedData.data;
     } catch (error) {
       console.log(error.message);
     }
@@ -272,27 +275,44 @@ out skel qt; */
   const changeGeoJsonColor = (props) => {
     const { streetId, color } = props;
     let tmpGeoJsonColorMap = state.geoJsonColorMap;
-    tmpGeoJsonColorMap.set(streetId, color);
+    tmpGeoJsonColorMap.set(streetId, { color: color });
     dispatch({
       type: CHANGE_GEO_JSON_COLOR_MAP,
       payload: tmpGeoJsonColorMap,
     });
   };
 
-  const createGeoJsonColorMap = (props) => {
-    const { geoJsonData, color } = props;
+  const createGeoJsonColorMap = async (props) => {
+    let { geoJsonData, color } = props;
+    try {
+      const position = [state.userLocationInfo.lat, state.userLocationInfo.lng];
+      console.log(position);
+      let allEditedStreetsInCity = await getAllEditedStreetsInCity(
+        position
+      );
 
-    let tmpGeoJsonColorMap = new Map();
+      
+      let tmpGeoJsonColorMap = new Map();
 
-    geoJsonData?.features.map((singleFeature) => {
-      let streetId = singleFeature.id.split("/")[1];
+      geoJsonData?.features.map((singleFeature) => {
+        let streetId = singleFeature.id.split("/")[1];
 
-      tmpGeoJsonColorMap.set(streetId, { color: color });
-    });
+        tmpGeoJsonColorMap.set(
+          streetId,
+          streetId in allEditedStreetsInCity
+            ? { color: "green" }
+            : { color: color }
+        );
+      });
+      
 
-    dispatch({ type: CHANGE_GEO_JSON_COLOR_MAP, payload: tmpGeoJsonColorMap });
-
-    
+      dispatch({
+        type: CHANGE_GEO_JSON_COLOR_MAP,
+        payload: tmpGeoJsonColorMap,
+      });
+    } catch (error) {
+      console.log(error.message);
+    }
   };
 
   const ChangeIsLoadingStreetDetailsData = (status) => {
