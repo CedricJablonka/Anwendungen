@@ -21,14 +21,16 @@ import {
   CHANGE_STREET_DETAILS_DATA,
   CHANGE_IS_LOADING_STREET_DETAILS_DATA,
   CHANGE_ALL_EDITED_STREETS_WITHIN_CITY,
-  ADD_GEO_JSON_REF,
+  CHANGE_SELECTED_COMPLETE_STREET,
   CHANGE_GEO_JSON_COLOR_MAP,
+  CHANGE_SHOW_SIDE_SHEET,
 } from "../types";
 import { overpassHighwayTypes } from "../../constants/overpassHighwayTypes";
 
 const GeneralState = ({ children }) => {
   const initialState = {
     streetData: [],
+    selectedCompleteStreet: {},
     streetDetailsData: streetDetailsData,
     overpassHighwayTypes: overpassHighwayTypes,
     overpassQuery: "",
@@ -38,9 +40,11 @@ const GeneralState = ({ children }) => {
     isLoadingStreetData: false,
     isLoadingStreetDetailsData: true,
     allEditedStreetsInCity: {},
+    showSideSheet: false,
     geoJsonRefs: new Map(),
     geoJsonColorsMap: new Map(),
     userLocationInfo: {
+      city: "",
       lat: 51.4818111,
       lng: 7.2196635,
       label: "",
@@ -53,119 +57,9 @@ const GeneralState = ({ children }) => {
 
   const [state, dispatch] = useReducer(GeneralReducer, initialState);
   const headers = { headers: { "Content-Type": "application/json" } };
+  const osmtogeojson = require("osmtogeojson");
 
-  const sendOverpassQuery = async () => {
-    //this function will call the helper function create overpassQuery
-    //and then perfom the actual overpass request with the created query
-    try {
-      dispatch({
-        type: CHANGE_IS_LOADING_STREET_DATA,
-      });
-
-      const query = createOverpassQuery();
-      const returnedData = await axios.post(
-        "https://www.overpass-api.de/api/interpreter",
-        query
-      );
-
-      console.log(returnedData.data);
-      //converts the osm data into an array of geoJSON objects
-      let osmtogeojson = require("osmtogeojson");
-      let wayElements = returnedData.data.elements.filter(
-        (singleFeature) => singleFeature.type === "way"
-      );
-      let nodeElements = returnedData.data.elements.filter(
-        (singleFeature) => singleFeature.type === "node"
-      );
-      console.log(wayElements);
-      let tmp = { ...returnedData.data, elements: nodeElements };
-
-      let geoJsonConversion = osmtogeojson(returnedData.data);
-      /*console.log("complete Conversion: ", geoJsonConversion)
-      console.log("all nodes: ",osmtogeojson({...returnedData.data, elements: nodeElements}))
-      console.log("all ways: ",osmtogeojson({...returnedData.data, elements: wayElements}))*/
-
-      await createGeoJsonColorMap({
-        geoJsonData: geoJsonConversion,
-        color: "#3388ff",
-      });
-      dispatch({
-        type: FETCH_STREET_DATA,
-        payload: geoJsonConversion,
-      });
-    } catch (err) {
-      dispatch({
-        type: CHANGE_IS_LOADING_STREET_DATA,
-      });
-      console.log(err.message);
-    }
-  };
-
-  const fetchOsmDetailedStreetData = async (wayId) => {
-    /*https://api.openstreetmap.org/api/0.6/way/515641498 */
-  };
-
-  const getOverpassCompleteWay = async (wayId) => {
-    /*[out:json];(nwr[name="Ruhrschnellweg"](51.4105043,7.1020817,51.5313751,7.3493347);>;);
-    out skel qt; */
-  };
-
-  const changeUserLocationInfo = (userLocationInfo) => {
-    dispatch({ type: CHANGE_USER_LOCATION_INFO, payload: userLocationInfo });
-  };
-
-  const changeHighwayTypeSelection = (highwayType) => {
-    /*this function is used for modifying the overpass query depending on the users selected street types */
-    console.log(highwayType);
-    dispatch({
-      type: CHANGE_HIGHWAY_TYPE_SELECTION,
-      payload: { highwayType: highwayType },
-    });
-  };
-
-  const createOverpassQuery = () => {
-    //this function creates an overpass query based on the highwaytypes selected by the user and a bounbding box of the users location
-
-    let selectedHighwayTypes = Object.values(overpassHighwayTypes).filter(
-      (type) => type.active
-    );
-
-    //get only the highwaytype names
-    selectedHighwayTypes = selectedHighwayTypes.map((type) => type.name);
-
-    //array to string with "|" as separator
-    selectedHighwayTypes = selectedHighwayTypes.join("|");
-
-    let query = `[out:json];(way["highway"~"^(${selectedHighwayTypes})$"](${
-      state.userLocationInfo.bounds[0].toString() +
-      "," +
-      state.userLocationInfo.bounds[1].toString()
-    });>;);
-    out skel qt;`;
-    dispatch({ type: UPDATE_OVERPASS_QUERY, payload: query });
-
-    /* [out:json];
-area[name="Oberhausen"];
-(way(area)["highway"~"^(motorway|trunk|primary|secondary|tertiary|unclassified|residential)$"];>;);
-out skel qt;*/
-
-    /*(way["highway"~"^(motorway|trunk|primary|secondary|tertiary|unclassified|residential)$"](51.4486973, 6.7773297,51.5799944, 6.9304578);>;);
-out skel qt; */
-
-    return query;
-  };
-
-  /************************************** StreetDetailData Actions*************************************************/
-  const changeStreetClickedPosition = (latlng) => {
-    dispatch({ type: CHANGE_STREET_CLICKED_POSITION, payload: latlng });
-
-    changeShowStreetDetailInformation();
-  };
-
-  const changeShowStreetDetailInformation = () => {
-    /*change function for setting the boolean variabel for showing the detail modal */
-    dispatch({ type: CHANGE_SHOW_STREET_DETAIL_INFORMATION, payload: true });
-  };
+  /************************************** Database related Actions*************************************************/
 
   const getAllEditedStreetsInCity = async (position) => {
     /*this functions takes a latitude and a longitude stored in a postion array and returns
@@ -206,7 +100,10 @@ out skel qt; */
 
       dispatch({
         type: CHANGE_STREET_DETAILS_DATA,
-        payload: streetDetailsData.data,
+        payload: {
+          ...streetDetailsData.data,
+          streetName: await getOsmStreetName(streetId),
+        },
       });
 
       dispatch({ type: CHANGE_IS_LOADING_STREET_DETAILS_DATA, payload: false });
@@ -258,67 +155,7 @@ out skel qt; */
     }
   };
 
-  /*********** utility ********************************/
-  const showUserMessage = (props) => {
-    const { messageType, message } = props;
-
-    if (messageType === "SUCCESS") {
-      toaster.success(message);
-    } else if (messageType === "ERROR") {
-      toaster.danger(message);
-    } else {
-      toaster.danger(message);
-    }
-  };
-
-  //this is just a helper function to avoid repeating
-  const changeGeoJsonColor = (props) => {
-    const { streetId, color } = props;
-    let tmpGeoJsonColorMap = state.geoJsonColorMap;
-    tmpGeoJsonColorMap.set(streetId, { color: color });
-    dispatch({
-      type: CHANGE_GEO_JSON_COLOR_MAP,
-      payload: tmpGeoJsonColorMap,
-    });
-  };
-
-  const createGeoJsonColorMap = async (props) => {
-    let { geoJsonData, color } = props;
-    try {
-      const position = [state.userLocationInfo.lat, state.userLocationInfo.lng];
-      console.log(position);
-      let allEditedStreetsInCity = await getAllEditedStreetsInCity(
-        position
-      );
-
-      
-      let tmpGeoJsonColorMap = new Map();
-
-      geoJsonData?.features.map((singleFeature) => {
-        let streetId = singleFeature.id.split("/")[1];
-
-        tmpGeoJsonColorMap.set(
-          streetId,
-          streetId in allEditedStreetsInCity
-            ? { color: "green" }
-            : { color: color }
-        );
-      });
-      
-
-      dispatch({
-        type: CHANGE_GEO_JSON_COLOR_MAP,
-        payload: tmpGeoJsonColorMap,
-      });
-    } catch (error) {
-      console.log(error.message);
-    }
-  };
-
-  const ChangeIsLoadingStreetDetailsData = (status) => {
-    dispatch({ type: CHANGE_IS_LOADING_STREET_DETAILS_DATA, payload: status });
-  };
-  /*********** get all street details within a city ********************************/
+  /***********foreign api actions ********************************/
   const getCity = async (streetId, osmType) => {
     /*https://nominatim.openstreetmap.org/reverse?format=xml&osm_type=W&osm_id=206488036
     based on a given streetId / osmId find the city in which a way or a node is located
@@ -370,18 +207,196 @@ out skel qt; */
     return returnedData.tags.name;
   };
 
-  /**********************************************copy and paste street detail data to clipboard************************************************** */
+  const sendOverpassQuery = async () => {
+    //this function will call the helper function create overpassQuery
+    //and then perfom the actual overpass request with the created query
+    try {
+      dispatch({
+        type: CHANGE_IS_LOADING_STREET_DATA,
+      });
+
+      const query = createOverpassQuery();
+      const returnedData = await axios.post(
+        "https://www.overpass-api.de/api/interpreter",
+        query
+      );
+
+      console.log(returnedData.data);
+      //converts the osm data into an array of geoJSON objects
+
+      let geoJsonConversion = osmtogeojson(returnedData.data);
+      /*console.log("complete Conversion: ", geoJsonConversion)
+      console.log("all nodes: ",osmtogeojson({...returnedData.data, elements: nodeElements}))
+      console.log("all ways: ",osmtogeojson({...returnedData.data, elements: wayElements}))*/
+
+      await createGeoJsonColorMap({
+        geoJsonData: geoJsonConversion,
+        color: "#3388ff",
+      });
+      dispatch({
+        type: FETCH_STREET_DATA,
+        payload: geoJsonConversion,
+      });
+    } catch (err) {
+      dispatch({
+        type: CHANGE_IS_LOADING_STREET_DATA,
+      });
+      console.log(err.message);
+    }
+  };
+
+  const getOverpassCompleteWay = async (streetId) => {
+    /*[out:json];(nwr[name="Ruhrschnellweg"](51.4105043,7.1020817,51.5313751,7.3493347);>;);
+    out skel qt; */
+    try {
+      let streetName = await getOsmStreetName(streetId);
+
+      let boundingBox = [
+        ...state.userLocationInfo.bounds[0],
+        ...state.userLocationInfo.bounds[1],
+      ];
+      let overPassQuery = `[out:json];(nwr[name="${streetName}"](${boundingBox.join(
+        ","
+      )});>;);out skel qt;`;
+
+      const returnedData = await axios.post(
+        "https://www.overpass-api.de/api/interpreter",
+        overPassQuery
+      );
+
+      let completeStreet = osmtogeojson(returnedData.data);
+      //remove nodes from the geojson object to avoid rendering POI Markers on the street
+      completeStreet = completeStreet.features.filter(feature=> feature.geometry.type === "LineString");
+
+      changeSelectedCompleteStreet(completeStreet);
+
+      return completeStreet;
+    } catch (error) {
+      showUserMessage({
+        messageType: "ERROR",
+        message: error.message,
+      });
+    }
+  };
+
+  /**************************************change Actions****************************************************** */
+  //this is just a helper function to avoid repeating
+  const changeGeoJsonColor = (props) => {
+    const { streetId, color } = props;
+
+    let tmpGeoJsonColorMap = state.geoJsonColorMap;
+
+    tmpGeoJsonColorMap.set(streetId, { color: color });
+
+    dispatch({
+      type: CHANGE_GEO_JSON_COLOR_MAP,
+      payload: tmpGeoJsonColorMap,
+    });
+  };
+
+  const changeStreetClickedPosition = (latlng) => {
+    dispatch({ type: CHANGE_STREET_CLICKED_POSITION, payload: latlng });
+
+    changeShowStreetDetailInformation();
+  };
+
+  const changeSelectedCompleteStreet = (completeStreetGeoJson) => {
+    dispatch({
+      type: CHANGE_SELECTED_COMPLETE_STREET,
+      payload: completeStreetGeoJson,
+    });
+  };
+
+  const changeShowStreetDetailInformation = () => {
+    /*change function for setting the boolean variabel for showing the detail modal */
+    dispatch({ type: CHANGE_SHOW_STREET_DETAIL_INFORMATION, payload: true });
+  };
+
+  const ChangeIsLoadingStreetDetailsData = (status) => {
+    dispatch({ type: CHANGE_IS_LOADING_STREET_DETAILS_DATA, payload: status });
+  };
+
+  const changeUserLocationInfo = (userLocationInfo) => {
+    dispatch({ type: CHANGE_USER_LOCATION_INFO, payload: userLocationInfo });
+  };
+
+  const changeHighwayTypeSelection = (highwayType) => {
+    /*this function is used for modifying the overpass query depending on the users selected street types */
+    console.log(highwayType);
+    dispatch({
+      type: CHANGE_HIGHWAY_TYPE_SELECTION,
+      payload: { highwayType: highwayType },
+    });
+  };
+
+  const changeShowSideSheet = (showSideSheet) => {
+    dispatch({ type: CHANGE_SHOW_SIDE_SHEET, payload: showSideSheet });
+  };
+
+  /************************************************* utility *********************************************/
+  const hasValues = (obj) => {
+    if (Object?.keys(obj)?.length === 0) return false;
+    else return true;
+  };
+
+  const showUserMessage = (props) => {
+    const { messageType, message } = props;
+
+    if (messageType === "SUCCESS") {
+      toaster.success(message);
+    } else if (messageType === "ERROR") {
+      toaster.danger(message);
+    } else {
+      toaster.danger(message);
+    }
+  };
+
+  const createGeoJsonColorMap = async (props) => {
+    let { geoJsonData, color } = props;
+    try {
+      const position = [state.userLocationInfo.lat, state.userLocationInfo.lng];
+
+      console.log(position);
+
+      let allEditedStreetsInCity = await getAllEditedStreetsInCity(position);
+
+      let tmpGeoJsonColorMap = new Map();
+
+      geoJsonData?.features.map((singleFeature) => {
+        let streetId = singleFeature.id.split("/")[1];
+
+        tmpGeoJsonColorMap.set(
+          streetId,
+          streetId in allEditedStreetsInCity
+            ? { color: "green" }
+            : { color: color }
+        );
+      });
+
+      dispatch({
+        type: CHANGE_GEO_JSON_COLOR_MAP,
+        payload: tmpGeoJsonColorMap,
+      });
+    } catch (error) {
+      console.log(error.message);
+    }
+  };
   const copyStreetDetailData = async (streetDetailData) => {
     if ("clipboard" in navigator) {
-      //this delete statements is very ugly code should be refactored in the future
+      //this delete statements are very ugly code should be refactored in the future
       delete streetDetailData._id;
+
       delete streetDetailData.streetId;
+
       delete streetDetailData.latlng;
+
       delete streetDetailData.city;
+
       delete streetDetailData.osmDetails;
 
       console.log(streetDetailData);
       await navigator.clipboard.writeText(JSON.stringify(streetDetailData));
+
       showUserMessage({
         messageType: "SUCCESS",
         message: "Copied Street Details Data!",
@@ -411,25 +426,43 @@ out skel qt; */
     } catch (error) {
       showUserMessage({
         messageType: "ERROR",
-        message: error.message,
+        message:
+          "Pasted Data has the wrong format, please use the copy function on valid Street Details Data!",
       });
     }
   };
 
-  /*********************************************************************geo json refs************** */
+  const createOverpassQuery = () => {
+    //this function creates an overpass query based on the highwaytypes selected by the user and a bounbding box of the users location
 
-  const addGeoJsonRef = (key, ref) => {
-    const refMap = state.geoJsonRefs.set(key, ref);
+    let selectedHighwayTypes = Object.values(overpassHighwayTypes).filter(
+      (type) => type.active
+    );
 
-    dispatch({ type: ADD_GEO_JSON_REF, payload: refMap });
+    //get only the highwaytype names
+    selectedHighwayTypes = selectedHighwayTypes.map((type) => type.name);
 
-    return ref;
+    //array to string with "|" as separator
+    selectedHighwayTypes = selectedHighwayTypes.join("|");
+
+    let query = `[out:json];(way["highway"~"^(${selectedHighwayTypes})$"](${
+      state.userLocationInfo.bounds[0].toString() +
+      "," +
+      state.userLocationInfo.bounds[1].toString()
+    });>;);
+    out skel qt;`;
+    dispatch({ type: UPDATE_OVERPASS_QUERY, payload: query });
+
+    /* [out:json];
+area[name="Oberhausen"];
+(way(area)["highway"~"^(motorway|trunk|primary|secondary|tertiary|unclassified|residential)$"];>;);
+out skel qt;*/
+
+    /*(way["highway"~"^(motorway|trunk|primary|secondary|tertiary|unclassified|residential)$"](51.4486973, 6.7773297,51.5799944, 6.9304578);>;);
+out skel qt; */
+
+    return query;
   };
-
-  const getGeoJsonRef = (key) => {
-    return state.geoJsonRefs.get(key);
-  };
-  /****************************************geo json color map utility */
 
   return (
     <GeneralContext.Provider
@@ -448,10 +481,13 @@ out skel qt; */
         getAllEditedStreetsInCity: getAllEditedStreetsInCity,
         copyStreetDetailData: copyStreetDetailData,
         pasteStreetDetailData: pasteStreetDetailData,
-        addGeoJsonRef: addGeoJsonRef,
-        getGeoJsonRef: getGeoJsonRef,
         getOsmStreetName: getOsmStreetName,
         changeGeoJsonColor: changeGeoJsonColor,
+        getOverpassCompleteWay: getOverpassCompleteWay,
+        changeShowSideSheet: changeShowSideSheet,
+        changeSelectedCompleteStreet: changeSelectedCompleteStreet,
+        hasValues: hasValues,
+        showSideSheet: state.showSideSheet,
         userLocationInfo: state.userLocationInfo,
         streetData: state.streetData,
         highwayTypes: state.overpassHighwayTypes,
@@ -462,6 +498,7 @@ out skel qt; */
         streetDetailsData: state.streetDetailsData,
         allEditedStreetsInCity: state.allEditedStreetsInCity,
         geoJsonColorMap: state.geoJsonColorMap,
+        selectedCompleteStreet: state.selectedCompleteStreet,
       }}
     >
       {children}

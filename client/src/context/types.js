@@ -14,3 +14,5 @@ export const CHANGE_IS_LOADING_STREET_DETAILS_DATA = "change_is_loading_street_d
 export const CHANGE_ALL_EDITED_STREETS_WITHIN_CITY = "change_all_edited_streets_within_city"
 export const ADD_GEO_JSON_REF = "add_geo_json_ref"
 export const CHANGE_GEO_JSON_COLOR_MAP = "change_geo_json_color"
+export const CHANGE_SELECTED_COMPLETE_STREET = "change_selected_complete_complete"
+export const CHANGE_SHOW_SIDE_SHEET = "change_show_side_sheet"

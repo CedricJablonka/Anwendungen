@@ -10,7 +10,9 @@ import {
   CHANGE_IS_LOADING_STREET_DETAILS_DATA,
   CHANGE_ALL_EDITED_STREETS_WITHIN_CITY,
   ADD_GEO_JSON_REF,
-  CHANGE_GEO_JSON_COLOR_MAP
+  CHANGE_GEO_JSON_COLOR_MAP,
+  CHANGE_SELECTED_COMPLETE_STREET,
+  CHANGE_SHOW_SIDE_SHEET
 } from "../types";
 
 const GeneralReducer = (prevState, { type, payload }) => {
@@ -64,6 +66,11 @@ const GeneralReducer = (prevState, { type, payload }) => {
         ...prevState,
         streetDetailsData: payload,
       };
+    case CHANGE_SELECTED_COMPLETE_STREET:
+      return {
+        ...prevState,
+        selectedCompleteStreet: payload,
+      };
 
     case CHANGE_IS_LOADING_STREET_DETAILS_DATA:
       return {
@@ -72,7 +79,6 @@ const GeneralReducer = (prevState, { type, payload }) => {
       };
 
     case UPDATE_OVERPASS_QUERY:
-      console.log(payload);
       return {
         ...prevState,
         overpassQuery: payload,
@@ -84,13 +90,15 @@ const GeneralReducer = (prevState, { type, payload }) => {
         allEditedStreetsInCity: payload,
       };
     case CHANGE_GEO_JSON_COLOR_MAP:
-      console.log(payload);
-      return{
+      return {
         ...prevState,
-        geoJsonColorMap: payload
-      }
+        geoJsonColorMap: payload,
+      };
     case ADD_GEO_JSON_REF:
       return { ...prevState, geoJSONRef: payload };
+
+    case CHANGE_SHOW_SIDE_SHEET:
+      return { ...prevState, showSideSheet: payload };
     default:
       return prevState;
   }
