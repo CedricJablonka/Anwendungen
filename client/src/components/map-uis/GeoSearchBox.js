@@ -20,10 +20,11 @@ const GeoSearchBox = (props) => {
     function showLocation(e) {
       console.log(e);
       changeUserLocationInfo({
+        position: [e.location.y, e.location.x],
         lat: e.location.y,
         lng: e.location.x,
         label: e.location.label,
-        bounds: e.location.bounds
+        bounds: e.location.bounds,
       });
     }
 

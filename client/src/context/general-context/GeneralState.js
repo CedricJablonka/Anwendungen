@@ -43,8 +43,10 @@ const GeneralState = ({ children }) => {
     showSideSheet: false,
     geoJsonRefs: new Map(),
     geoJsonColorsMap: new Map(),
+    streetMode: "SINGLE",
     userLocationInfo: {
       city: "",
+      position: [51.4818111, 7.2196635],
       lat: 51.4818111,
       lng: 7.2196635,
       label: "",
@@ -65,10 +67,10 @@ const GeneralState = ({ children }) => {
     /*this functions takes a latitude and a longitude stored in a postion array and returns
     it will find the osm id that matches the given coordinates and will find the nearest city that
     to that coordinate. Then it will return all edited streets in this city.*/
-    const osmId = await getOsmIdByCoordinates(position[0], position[1]);
 
-    const city = await getCity(osmId, "N");
-
+    console.log(position);
+    const city = await getCityByCoordinates(position);
+    console.log(city);
     try {
       const returnedData = await axios.get(
         GET_ALL_STREET_DETAILS_WITHIN_City_URL + `${encodeURIComponent(city)}`,
@@ -102,7 +104,7 @@ const GeneralState = ({ children }) => {
         type: CHANGE_STREET_DETAILS_DATA,
         payload: {
           ...streetDetailsData.data,
-          streetName: await getOsmStreetName(streetId),
+          streetName: await getOsmStreetRef(streetId),
         },
       });
 
@@ -134,7 +136,7 @@ const GeneralState = ({ children }) => {
       ...state.streetDetailsData,
       streetId: streetId,
       latlng: state.streetClickedPosition.latlng,
-      city: await getCity(streetId, "W"),
+      city: await getCityByCoordinates(state.userLocationInfo.position),
       osmDetails: await getOsmStreetInformation(streetId),
     };
 
@@ -150,32 +152,18 @@ const GeneralState = ({ children }) => {
         message: response.data.message,
         messageType: "SUCCESS",
       });
+
+      getAllEditedStreetsInCity(state.userLocationInfo.position);
     } catch (error) {
       showUserMessage({ message: error.message, messageType: "ERROR" });
     }
   };
 
   /***********foreign api actions ********************************/
-  const getCity = async (streetId, osmType) => {
-    /*https://nominatim.openstreetmap.org/reverse?format=xml&osm_type=W&osm_id=206488036
-    based on a given streetId / osmId find the city in which a way or a node is located
-     */
+  const getCityByCoordinates = async (position) => {
+    const lat = position[0];
+    const lng = position[1];
 
-    try {
-      const returnedData = await axios.get(
-        `https://nominatim.openstreetmap.org/reverse?format=json&osm_type=${encodeURIComponent(
-          osmType
-        )}&osm_id=${encodeURIComponent(streetId)}`,
-        headers
-      );
-
-      return returnedData.data.address.city;
-    } catch (error) {
-      console.log(error.message);
-    }
-  };
-
-  const getOsmIdByCoordinates = async (lat, lng) => {
     try {
       const returnedData = await axios.get(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(
@@ -183,7 +171,8 @@ const GeneralState = ({ children }) => {
         )}&lon=${encodeURIComponent(lng)}`,
         headers
       );
-      return returnedData.data.osm_id;
+      console.log(returnedData.data.address.city);
+      return returnedData.data.address.city;
     } catch (error) {}
   };
 
@@ -201,10 +190,12 @@ const GeneralState = ({ children }) => {
     }
   };
 
-  const getOsmStreetName = async (streetId) => {
+  const getOsmStreetRef = async (streetId) => {
     const returnedData = await getOsmStreetInformation(streetId);
-    console.log(returnedData.tags.name);
-    return returnedData.tags.name;
+
+    //motorways dont have a name tag so a check is necessary if name tag does not exist it will use the ref tag
+
+    return returnedData.tags.ref;
   };
 
   const sendOverpassQuery = async () => {
@@ -249,13 +240,17 @@ const GeneralState = ({ children }) => {
     /*[out:json];(nwr[name="Ruhrschnellweg"](51.4105043,7.1020817,51.5313751,7.3493347);>;);
     out skel qt; */
     try {
-      let streetName = await getOsmStreetName(streetId);
+      let streetRef = await getOsmStreetRef(streetId);
 
+      //Todo city should be saved somewhere more globally to prevent unnecessary requests
+      let cityName = await getCityByCoordinates(
+        state.userLocationInfo.position
+      );
       let boundingBox = [
         ...state.userLocationInfo.bounds[0],
         ...state.userLocationInfo.bounds[1],
       ];
-      let overPassQuery = `[out:json];(nwr[name="${streetName}"](${boundingBox.join(
+      let overPassQuery = `[out:json];(nwr[ref="${streetRef}"](${boundingBox.join(
         ","
       )});>;);out skel qt;`;
 
@@ -266,9 +261,15 @@ const GeneralState = ({ children }) => {
 
       let completeStreet = osmtogeojson(returnedData.data);
       //remove nodes from the geojson object to avoid rendering POI Markers on the street
-      completeStreet = completeStreet.features.filter(feature=> feature.geometry.type === "LineString");
+      completeStreet = completeStreet.features.filter(
+        (feature) => feature.geometry.type === "LineString"
+      );
+      console.log(completeStreet);
 
-      changeSelectedCompleteStreet(completeStreet);
+      changeSelectedCompleteStreet({
+        data: completeStreet,
+        streetId: `${streetRef + cityName}`,
+      });
 
       return completeStreet;
     } catch (error) {
@@ -477,11 +478,11 @@ out skel qt; */
         changeStreetDetailsData: changeStreetDetailsData,
         sendStreetDetailsData: sendStreetDetailsData,
         showUserMessage: showUserMessage,
-        getOsmIdByCoordinates: getOsmIdByCoordinates,
+        getCityByCoordinates: getCityByCoordinates,
         getAllEditedStreetsInCity: getAllEditedStreetsInCity,
         copyStreetDetailData: copyStreetDetailData,
         pasteStreetDetailData: pasteStreetDetailData,
-        getOsmStreetName: getOsmStreetName,
+        getOsmStreetRef: getOsmStreetRef,
         changeGeoJsonColor: changeGeoJsonColor,
         getOverpassCompleteWay: getOverpassCompleteWay,
         changeShowSideSheet: changeShowSideSheet,

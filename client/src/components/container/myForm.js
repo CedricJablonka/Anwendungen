@@ -71,7 +71,7 @@ const MyForm = (props) => {
           <Pane display="flex" flexWrap="wrap">
             <Pane display="flex" flexWrap="wrap">
               <h3>{`${streetDetailsData.streetName} `}</h3>
-              <h3>{`Abschnitt Id: ${streetId}`}</h3>
+              <h3>{`|Abschnitt Id: ${streetId}`}</h3>
             </Pane>
 
             {streetFormFieldData.map((formField) => {
