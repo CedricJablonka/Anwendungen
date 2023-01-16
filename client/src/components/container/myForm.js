@@ -6,12 +6,14 @@ import {
   IconButton,
   majorScale,
   InsertIcon,
+  Tooltip,
 } from "evergreen-ui";
 import { streetFormFieldData } from "../../constants/streetFormFieldData";
 import MyInput from "../inputs/myInput";
 import { useContext, useState, useEffect } from "react";
 import GeneralContext from "../../context/general-context/GeneralContext";
 import { useMapEvents } from "react-leaflet";
+import { MdOutlineAddRoad, MdOutlineContentCopy, MdOutlineContentPaste } from "react-icons/md";
 
 const MyForm = (props) => {
   const { streetId } = props;
@@ -21,32 +23,37 @@ const MyForm = (props) => {
     sendStreetDetailsData,
     copyStreetDetailData,
     pasteStreetDetailData,
-    getOsmStreetName,
     changeGeoJsonColor,
-    geoJsonColorMap,
     allEditedStreetsInCity,
+    getOverpassCompleteWay,
+    changeShowSideSheet,
+  
   } = useContext(GeneralContext);
 
-  const [streetName, setStreetName] = useState("");
+  const iconSize = 20;
 
   //these map events are used to highlight and dehighlight a street depending if it is selected or not
   const map = useMapEvents({
     popupopen: (e) => {
       changeGeoJsonColor({ streetId: streetId, color: "orange" });
-      console.log("open");
     },
     popupclose: (e) => {
       streetId in allEditedStreetsInCity
         ? changeGeoJsonColor({ streetId: streetId, color: "green" })
         : changeGeoJsonColor({ streetId: streetId, color: "#3388ff" });
-
-      console.log("close");
     },
   });
 
   const handleCopy = () => {
     copyStreetDetailData(streetDetailsData);
   };
+
+  const handleGetCompleteStreet = async () => {
+    const selectedCompleteStreet = await getOverpassCompleteWay(streetId);
+    console.log(selectedCompleteStreet);
+    changeShowSideSheet(true);
+
+  }
 
   const handlePaste = () => {
     pasteStreetDetailData();
@@ -56,12 +63,17 @@ const MyForm = (props) => {
     e.preventDefault();
     sendStreetDetailsData(streetId);
   };
+
   return (
     <>
       {!isLoadingStreetDetailsData ? (
         <Pane>
           <Pane display="flex" flexWrap="wrap">
-            <h3>{`Street Id: ${streetId}`}</h3>
+            <Pane display="flex" flexWrap="wrap">
+              <h3>{`${streetDetailsData.streetName} `}</h3>
+              <h3>{`|Abschnitt Id: ${streetId}`}</h3>
+            </Pane>
+
             {streetFormFieldData.map((formField) => {
               return (
                 <MyInput
@@ -77,16 +89,27 @@ const MyForm = (props) => {
             <Button appearance="primary" onClick={handleSubmit}>
               Submit
             </Button>
-            <IconButton
-              icon={ClipboardIcon}
-              onClick={handleCopy}
-              marginLeft={majorScale(2)}
-            />
-            <IconButton
-              icon={InsertIcon}
-              onClick={handlePaste}
-              marginLeft={majorScale(2)}
-            />
+            <Tooltip content="Copy Streetdata">
+              <IconButton
+                icon={<MdOutlineContentCopy size={iconSize} />}
+                onClick={handleCopy}
+                marginLeft={majorScale(2)}
+              />
+            </Tooltip>
+            <Tooltip content="Paste Streetdata">
+              <IconButton
+                icon={<MdOutlineContentPaste size={iconSize} />}
+                onClick={handlePaste}
+                marginLeft={majorScale(2)}
+              />
+            </Tooltip>
+            <Tooltip content="Get complete Street">
+              <IconButton
+                icon={<MdOutlineAddRoad size={iconSize} />}
+                onClick={handleGetCompleteStreet}
+                marginLeft={majorScale(2)}
+              />
+            </Tooltip>
           </Pane>
         </Pane>
       ) : (

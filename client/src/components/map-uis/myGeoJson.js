@@ -3,6 +3,7 @@ import { useContext} from "react";
 import GeneralContext from "../../context/general-context/GeneralContext";
 
 const MyGeoJson = (props) => {
+  //TODO make this component generic no export every specific logic
   const handleOnClick = (e) => {
     changeStreetClickedPosition({ latlng: e.latlng, streetId: streetId });
     
