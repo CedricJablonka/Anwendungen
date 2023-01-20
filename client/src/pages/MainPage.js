@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect} from "react";
 import { MapContainer, TileLayer, Marker } from "react-leaflet";
 import GeoSearchBox from "../components/map-uis/GeoSearchBox";
 import { OpenStreetMapProvider } from "leaflet-geosearch";
@@ -51,7 +51,7 @@ const MainPage = () => {
         <></>
       )}
 
-      <MapContainer center={userLocationInfo.position} zoom={13} scrollWheelZoom={true}>
+      <MapContainer center={userLocationInfo.position} zoom={13} scrollWheelZoom={true} closePopupOnClick={false}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -60,16 +60,15 @@ const MainPage = () => {
         {showStreetDetailInformation && (
           <MyPopup
             position={streetClickedPosition.latlng}
-            streetId={streetClickedPosition.streetId}
           >
-            <MyForm streetId={streetClickedPosition.streetId} />
+            <MyForm streetId={streetClickedPosition.streetId}/>
           </MyPopup>
         )}
-        <Marker position={userLocationInfo.position}>
+        {/*<Marker position={userLocationInfo.position}>
           <MyPopup>
             <MyForm />
           </MyPopup>
-        </Marker>
+        </Marker> */}
         {!hasValues(selectedCompleteStreet) ? (
           streetData?.features?.map((singleFeature) => {
             let streetId = singleFeature.id.split("/")[1];

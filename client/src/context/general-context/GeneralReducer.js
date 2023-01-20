@@ -12,7 +12,8 @@ import {
   ADD_GEO_JSON_REF,
   CHANGE_GEO_JSON_COLOR_MAP,
   CHANGE_SELECTED_COMPLETE_STREET,
-  CHANGE_SHOW_SIDE_SHEET
+  CHANGE_SHOW_SIDE_SHEET,
+  CHANGE_PLAINS_DETAILS_DATA,
 } from "../types";
 
 const GeneralReducer = (prevState, { type, payload }) => {
@@ -66,6 +67,11 @@ const GeneralReducer = (prevState, { type, payload }) => {
         ...prevState,
         streetDetailsData: payload,
       };
+    case CHANGE_PLAINS_DETAILS_DATA:
+      return {
+        ...prevState,
+        plainsDetailsData: payload,
+      };
     case CHANGE_SELECTED_COMPLETE_STREET:
       return {
         ...prevState,
@@ -73,6 +79,7 @@ const GeneralReducer = (prevState, { type, payload }) => {
       };
 
     case CHANGE_IS_LOADING_STREET_DETAILS_DATA:
+      console.log(payload)
       return {
         ...prevState,
         isLoadingStreetDetailsData: payload,

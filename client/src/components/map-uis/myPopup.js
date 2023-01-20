@@ -1,10 +1,8 @@
-import { Popup, useMapEvents } from "react-leaflet";
-import {useContext} from "react";
-import GeneralContext from "../../context/general-context/GeneralContext";
+import { Popup } from "react-leaflet";
 
 const MyPopup = (props) => {
-  const { position, children} = props;
- 
+  const { position, children } = props;
+  
   return (
     <>
       <Popup position={position}>{children}</Popup>
