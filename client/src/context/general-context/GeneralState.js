@@ -1,4 +1,4 @@
-import React, { useReducer, useRef } from "react";
+import React, { useReducer, useRef, useState } from "react";
 import { toaster } from "evergreen-ui";
 import GeneralContext from "./GeneralContext";
 import GeneralReducer from "./GeneralReducer";
@@ -24,6 +24,7 @@ import {
   CHANGE_SELECTED_COMPLETE_STREET,
   CHANGE_GEO_JSON_COLOR_MAP,
   CHANGE_SHOW_SIDE_SHEET,
+  CHANGE_PLAINS_DETAILS_DATA,
 } from "../types";
 import { overpassHighwayTypes } from "../../constants/overpassHighwayTypes";
 
@@ -32,13 +33,14 @@ const GeneralState = ({ children }) => {
     streetData: [],
     selectedCompleteStreet: {},
     streetDetailsData: streetDetailsData,
+    plainsDetailsData: [],
     overpassHighwayTypes: overpassHighwayTypes,
     overpassQuery: "",
     showStreetDetailInformation: false,
     streetClickedPosition: {},
     clickedPosition: {},
     isLoadingStreetData: false,
-    isLoadingStreetDetailsData: true,
+    isLoadingStreetDetailsData: false,
     allEditedStreetsInCity: {},
     showSideSheet: false,
     geoJsonRefs: new Map(),
@@ -58,6 +60,7 @@ const GeneralState = ({ children }) => {
   };
 
   const [state, dispatch] = useReducer(GeneralReducer, initialState);
+  const [isLoading, setIsLoading] = useState(true)
   const headers = { headers: { "Content-Type": "application/json" } };
   const osmtogeojson = require("osmtogeojson");
 
@@ -90,9 +93,9 @@ const GeneralState = ({ children }) => {
 
   const getStreetDetailsData = async (streetId) => {
     /*function to perform the api call for retrieving the street details for one particular street part by id */
-
+    dispatch({ type: CHANGE_IS_LOADING_STREET_DETAILS_DATA, payload: true });
     try {
-      dispatch({ type: CHANGE_IS_LOADING_STREET_DETAILS_DATA, payload: true });
+      
 
       const streetDetailsData = await axios.get(
         STREET_GET_DETAILS_URL + `/${encodeURIComponent(streetId)}`,
@@ -100,15 +103,30 @@ const GeneralState = ({ children }) => {
         headers
       );
 
+      //maybe there is a way to combine plainsDetailsData and streetDetailsData
+      //for now two dispatches are needed
+
+      console.log(streetDetailsData);
+
+      let tmpPlaines = streetDetailsData.data.plaines;
+      let tmpStreetDetailsData = {...streetDetailsData.data};
+      delete tmpStreetDetailsData.plaines;
+
       dispatch({
         type: CHANGE_STREET_DETAILS_DATA,
         payload: {
-          ...streetDetailsData.data,
+          ...tmpStreetDetailsData,
           streetName: await getOsmStreetRef(streetId),
         },
       });
 
+      dispatch({
+        type: CHANGE_PLAINS_DETAILS_DATA,
+        payload: [...tmpPlaines],
+      });
+
       dispatch({ type: CHANGE_IS_LOADING_STREET_DETAILS_DATA, payload: false });
+      
     } catch (error) {
       dispatch({ type: CHANGE_IS_LOADING_STREET_DETAILS_DATA, payload: false });
     }
@@ -120,10 +138,36 @@ const GeneralState = ({ children }) => {
       ...state.streetDetailsData,
       [fieldToChange]: newValue,
     };
-
     dispatch({
       type: CHANGE_STREET_DETAILS_DATA,
       payload: updatedStreetDetails,
+    });
+  };
+
+  const addPlain = (newPlainData) => {
+    let tmpPlainData = [...state.plainsDetailsData, newPlainData];
+    console.log(tmpPlainData);
+    dispatch({ type: CHANGE_PLAINS_DETAILS_DATA, payload: tmpPlainData });
+  };
+
+  const deletePlain = (plainIndex) => {
+    let tmpPlainData = [...state.plainsDetailsData];
+    tmpPlainData.splice(plainIndex, 1);
+    console.log(tmpPlainData);
+    dispatch({ type: CHANGE_PLAINS_DETAILS_DATA, payload: tmpPlainData });
+  };
+
+  const changePlainsDetailsData = (plainIndex, fieldId, newValue) => {
+    let tmpPlainData = [...state.plainsDetailsData];
+    tmpPlainData[plainIndex][fieldId] = newValue;
+    let plainArea = tmpPlainData[plainIndex]["area"];
+    let plainThickness = tmpPlainData[plainIndex]["thickness"];
+    let plainMass = plainArea * plainThickness;
+
+    tmpPlainData[plainIndex]["mass"] = plainMass;
+    dispatch({
+      type: CHANGE_PLAINS_DETAILS_DATA,
+      payload: tmpPlainData,
     });
   };
 
@@ -134,11 +178,13 @@ const GeneralState = ({ children }) => {
     //add latlng, cityName the street is located (for filtering all modified streets within a city) and the osm streetid
     let preparedStreetDetailsData = {
       ...state.streetDetailsData,
+      plaines: [...state.plainsDetailsData],
       streetId: streetId,
       latlng: state.streetClickedPosition.latlng,
       city: await getCityByCoordinates(state.userLocationInfo.position),
       osmDetails: await getOsmStreetInformation(streetId),
     };
+    console.log(preparedStreetDetailsData);
 
     try {
       const response = await axios.post(
@@ -211,7 +257,6 @@ const GeneralState = ({ children }) => {
         "https://www.overpass-api.de/api/interpreter",
         query
       );
-
       console.log(returnedData.data);
       //converts the osm data into an array of geoJSON objects
 
@@ -219,7 +264,7 @@ const GeneralState = ({ children }) => {
       /*console.log("complete Conversion: ", geoJsonConversion)
       console.log("all nodes: ",osmtogeojson({...returnedData.data, elements: nodeElements}))
       console.log("all ways: ",osmtogeojson({...returnedData.data, elements: wayElements}))*/
-
+      console.log(geoJsonConversion);
       await createGeoJsonColorMap({
         geoJsonData: geoJsonConversion,
         color: "#3388ff",
@@ -395,8 +440,15 @@ const GeneralState = ({ children }) => {
 
       delete streetDetailData.osmDetails;
 
+
+
       console.log(streetDetailData);
-      await navigator.clipboard.writeText(JSON.stringify(streetDetailData));
+      await navigator.clipboard.writeText(
+        JSON.stringify({
+          streetDetailData: streetDetailData,
+          plainData: state.plainsDetailsData,
+        })
+      );
 
       showUserMessage({
         messageType: "SUCCESS",
@@ -412,19 +464,26 @@ const GeneralState = ({ children }) => {
 
   const pasteStreetDetailData = async () => {
     try {
-      const pastedData = await navigator.clipboard.readText();
-
+      let pastedData = await navigator.clipboard.readText();
+      pastedData = JSON.parse(pastedData);
+      
       //there is some room where street id, city and latlng from the old street details are copied and pasted as well
       //this has no effect on the functionality but it is not the best style
       dispatch({
         type: CHANGE_STREET_DETAILS_DATA,
-        payload: JSON.parse(pastedData),
+        payload: pastedData.streetDetailData,
+      });
+
+      dispatch({
+        type: CHANGE_PLAINS_DETAILS_DATA,
+        payload: pastedData.plainData,
       });
       showUserMessage({
         messageType: "SUCCESS",
         message: "Pasted Street Detail Data Succesfully!",
       });
     } catch (error) {
+      console.log(error);
       showUserMessage({
         messageType: "ERROR",
         message:
@@ -476,6 +535,9 @@ out skel qt; */
         changeShowStreetDetailInformation: changeShowStreetDetailInformation,
         getStreetDetailsData: getStreetDetailsData,
         changeStreetDetailsData: changeStreetDetailsData,
+        changePlainsDetailsData: changePlainsDetailsData,
+        addPlain: addPlain,
+        deletePlain: deletePlain,
         sendStreetDetailsData: sendStreetDetailsData,
         showUserMessage: showUserMessage,
         getCityByCoordinates: getCityByCoordinates,
@@ -494,9 +556,11 @@ out skel qt; */
         highwayTypes: state.overpassHighwayTypes,
         overpassQuery: state.overpassQuery,
         isLoadingStreetData: state.isLoadingStreetData,
+        isLoadingStreetDetailsData: state.isLoadingStreetDetailsData,
         showStreetDetailInformation: state.showStreetDetailInformation,
         streetClickedPosition: state.streetClickedPosition,
         streetDetailsData: state.streetDetailsData,
+        plainsDetailsData: state.plainsDetailsData,
         allEditedStreetsInCity: state.allEditedStreetsInCity,
         geoJsonColorMap: state.geoJsonColorMap,
         selectedCompleteStreet: state.selectedCompleteStreet,
