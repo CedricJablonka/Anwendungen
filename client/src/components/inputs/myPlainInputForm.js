@@ -4,13 +4,16 @@ import GeneralContext from "../../context/general-context/GeneralContext";
 import plainFormFields from "../../constants/plainFormFields";
 import MyInput from "./myInput";
 import MyCollapseContainer from "../container/myCollapseContainer";
+import streetLayerTypes from "../../constants/streetlayerTypes";
+import MySelect from "./mySelect";
 
 const MyPlainInputForm = () => {
   const { plainsDetailsData, changePlainsDetailsData, addPlain, deletePlain } =
     useContext(GeneralContext);
 
   const onAddPlain = () => {
-    plainsDetailsData.length <= 10 && addPlain({ mass: "", area: "", thickness: "", layerTyp: "" });
+    plainsDetailsData.length <= 10 &&
+      addPlain({ mass: "", area: "", thickness: "", layerTyp: "" });
   };
 
   const onChangePlain = (plaineIndex, fieldId, newValue) => {
@@ -44,7 +47,6 @@ const MyPlainInputForm = () => {
                     }
                     return (
                       <MyInput
-                        onChange={onChangePlain}
                         label={formField.name}
                         key={formField.name}
                         inputId={formField.id}
@@ -55,8 +57,14 @@ const MyPlainInputForm = () => {
                       />
                     );
                   })}
+                  <MySelect
+                    optionsArray={streetLayerTypes}
+                    label={"Schichttyp"}
+                    inputId={"layerType"}
+                    index={plainIndex}
+                  />
                   <MyInput
-                    label="Masse"
+                    label="Masse (t)"
                     key="mass"
                     inputId={"mass"}
                     initialValue={plainsDetailsData[plainIndex]["mass"]}

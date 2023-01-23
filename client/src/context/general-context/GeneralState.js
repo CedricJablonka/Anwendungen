@@ -162,7 +162,8 @@ const GeneralState = ({ children }) => {
     tmpPlainData[plainIndex][fieldId] = newValue;
     let plainArea = tmpPlainData[plainIndex]["area"];
     let plainThickness = tmpPlainData[plainIndex]["thickness"];
-    let plainMass = plainArea * plainThickness;
+    let layerDensity = tmpPlainData[plainIndex]["layerType"];
+    let plainMass = plainArea * plainThickness * layerDensity;
 
     tmpPlainData[plainIndex]["mass"] = plainMass;
     dispatch({
@@ -430,22 +431,23 @@ const GeneralState = ({ children }) => {
   const copyStreetDetailData = async (streetDetailData) => {
     if ("clipboard" in navigator) {
       //this delete statements are very ugly code should be refactored in the future
-      delete streetDetailData._id;
+      let tmpStreetDetailsData = {...streetDetailData};
+      delete tmpStreetDetailsData._id;
 
-      delete streetDetailData.streetId;
+      delete tmpStreetDetailsData.streetId;
 
-      delete streetDetailData.latlng;
+      delete tmpStreetDetailsData.latlng;
 
-      delete streetDetailData.city;
+      delete tmpStreetDetailsData.city;
 
-      delete streetDetailData.osmDetails;
+      delete tmpStreetDetailsData.osmDetails;
 
 
+      
 
-      console.log(streetDetailData);
       await navigator.clipboard.writeText(
         JSON.stringify({
-          streetDetailData: streetDetailData,
+          streetDetailData: tmpStreetDetailsData,
           plainData: state.plainsDetailsData,
         })
       );
@@ -553,7 +555,7 @@ out skel qt; */
         showSideSheet: state.showSideSheet,
         userLocationInfo: state.userLocationInfo,
         streetData: state.streetData,
-        highwayTypes: state.overpassHighwayTypes,
+        overpassHighwayTypes: state.overpassHighwayTypes,
         overpassQuery: state.overpassQuery,
         isLoadingStreetData: state.isLoadingStreetData,
         isLoadingStreetDetailsData: state.isLoadingStreetDetailsData,

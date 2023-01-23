@@ -77,9 +77,6 @@ const MainPage = () => {
                 data={singleFeature}
                 key={singleFeature.id}
                 streetId={streetId}
-                style={
-                  streetId in allEditedStreetsInCity ? { color: "green" } : {}
-                }
               ></MyGeoJson>
             );
           })
