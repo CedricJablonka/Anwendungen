@@ -5,7 +5,7 @@ const MyPopup = (props) => {
   
   return (
     <>
-      <Popup position={position}>{children}</Popup>
+      <Popup style={{width: "500ppx"}} position={position}>{children}</Popup>
     </>
   );
 };

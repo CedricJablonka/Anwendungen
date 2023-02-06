@@ -1,74 +1,134 @@
-import React, { useContext, useEffect} from "react";
-import { MapContainer, TileLayer, Marker } from "react-leaflet";
+import React, { useContext, useEffect } from "react";
+import { MapContainer, TileLayer } from "react-leaflet";
 import GeoSearchBox from "../components/map-uis/GeoSearchBox";
 import { OpenStreetMapProvider } from "leaflet-geosearch";
 import MyPopup from "../components/map-uis/myPopup";
 import MyGeoJson from "../components/map-uis/myGeoJson";
 import GeneralContext from "../context/general-context/GeneralContext";
+import CompleteStreetContext from "../context/complete-street-context/CompleteStreetContext";
 import StreetTypeSelection from "../components/streetTypeSelection";
 import MyForm from "../components/container/myForm";
-import MySideSheet from "../components/mySideSheet";
-import { TbRoadOff } from "react-icons/tb";
-import { Pane } from "evergreen-ui";
-import MyIconButton from "../components/ui-elements/myIconButton";
+import MyCompleteStreetForm from "../components/container/myCompleteStreetForm";
+import MyStreetSections from "../components/map-uis/myStreetSections";
+import MyCompleteStreetOptions from "../components/ui-elements/myCompleteStreetOptions";
 
 const MainPage = () => {
   const {
+    streetDetailsData,
     streetData,
     showStreetDetailInformation,
     streetClickedPosition,
     getAllEditedStreetsInCity,
-    allEditedStreetsInCity,
     selectedCompleteStreet,
-    showSideSheet,
     hasValues,
     changeSelectedCompleteStreet,
-    userLocationInfo
+    userLocationInfo,
+    changeStreetClickedPosition,
+    getStreetDetailsData,
+    changePlainsDetailsData,
+    changeStreetDetailsData,
+    getOverpassCompleteWay,
+    changeStreetMode,
+    streetMode,
+    changeShowStreetDetailInformation
   } = useContext(GeneralContext);
-  const position = [51.4818111, 7.2196635];
-
+ 
+  const {
+    currentCustomStreetSectionId,
+    getCompleteStreetData,
+    changeShowCustomStreetSections
+  } = useContext(CompleteStreetContext);
   useEffect(() => {
     getAllEditedStreetsInCity(userLocationInfo.position);
   }, [userLocationInfo.position]);
 
-  const unselectCompleteStreet = () => {
+  const onUnselectCompleteStreet = () => {
+    changeStreetMode("SINGLE");
+    changeShowCustomStreetSections(false);
     changeSelectedCompleteStreet({});
+    //resetStreetData()
   };
 
+  const onGeoJsonClick = (e, streetId) => {
+
+    changeStreetClickedPosition({ latlng: e.latlng, streetId: streetId });
+    changeShowStreetDetailInformation(true);
+    getStreetDetailsData(streetId);
+  };
+
+  const onFormChange = (newValue, plainIndex, inputId) => {
+    if (plainIndex !== undefined) {
+      changePlainsDetailsData(plainIndex, inputId, newValue);
+    } else {
+      changeStreetDetailsData(inputId, newValue);
+    }
+  };
+
+  const onGetCompleteStreet = async (streetId) => {
+    const completeStreetId = await getOverpassCompleteWay(streetId);
+    await getCompleteStreetData(completeStreetId);
+    changeStreetMode("COMPLETE");
+  };
+
+  const onShowAllStreetSections = () => {
+    changeShowCustomStreetSections(true);
+  };
+
+  const onHideAllStreetSections = () => {
+    changeShowCustomStreetSections(false);
+
+  }
   return (
     <>
-      <StreetTypeSelection />
+      {streetMode === "SINGLE" && <StreetTypeSelection />}
       {/* <MySideSheet isShown={showSideSheet} />*/}
       {hasValues(selectedCompleteStreet) ? (
-        <Pane display="flex" justifyContent="flex-end">
-          <MyIconButton
-            tooltipContent="Remove Selected Complete Street"
-            icon={<TbRoadOff size={20} />}
-            onClick={unselectCompleteStreet}
-          />
-        </Pane>
+        <MyCompleteStreetOptions
+          onUnselectCompleteStreet={onUnselectCompleteStreet}
+          onShowAllStreetSections={onShowAllStreetSections}
+          onHideAllStreetSections={onHideAllStreetSections}
+        />
       ) : (
         <></>
       )}
 
-      <MapContainer center={userLocationInfo.position} zoom={13} scrollWheelZoom={true} closePopupOnClick={false}>
+      <MapContainer
+        center={userLocationInfo.position}
+        zoom={13}
+        zoomControl={false}
+        scrollWheelZoom={true}
+        closePopupOnClick={false}
+      >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <GeoSearchBox provider={new OpenStreetMapProvider()} />
-        {showStreetDetailInformation && (
-          <MyPopup
-            position={streetClickedPosition.latlng}
-          >
-            <MyForm streetId={streetClickedPosition.streetId}/>
-          </MyPopup>
-        )}
+        {/*first case is the pop up behavior for street details second case for complete street operations*/}
+        {showStreetDetailInformation &&
+          (!hasValues(selectedCompleteStreet) ? (
+            <MyPopup position={streetClickedPosition.latlng}>
+              <MyForm
+                streetId={streetClickedPosition.streetId}
+                formData={streetDetailsData}
+                onChange={onFormChange}
+                onGetCompleteStreet={onGetCompleteStreet}
+              />
+            </MyPopup>
+          ) : (
+            <>
+              <MyCompleteStreetForm
+                streetId={currentCustomStreetSectionId}
+                position={streetClickedPosition.latlng}
+              />
+            </>
+          ))}
         {/*<Marker position={userLocationInfo.position}>
           <MyPopup>
             <MyForm />
           </MyPopup>
         </Marker> */}
+        {/*first condition renders geo json for single street details mode second for complete street details mode */}
         {!hasValues(selectedCompleteStreet) ? (
           streetData?.features?.map((singleFeature) => {
             let streetId = singleFeature.id.split("/")[1];
@@ -77,6 +137,7 @@ const MainPage = () => {
                 data={singleFeature}
                 key={singleFeature.id}
                 streetId={streetId}
+                onClick={onGeoJsonClick}
               ></MyGeoJson>
             );
           })
@@ -86,6 +147,7 @@ const MainPage = () => {
             streetId={selectedCompleteStreet.streetId}
           />
         )}
+        <MyStreetSections />
       </MapContainer>
     </>
   );

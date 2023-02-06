@@ -2,6 +2,7 @@ import React, { useReducer, useRef, useState } from "react";
 import { toaster } from "evergreen-ui";
 import GeneralContext from "./GeneralContext";
 import GeneralReducer from "./GeneralReducer";
+import plainFormFields from "../../constants/plainFormFields";
 import axios from "axios";
 import { streetDetailsData } from "../../constants/streetDetailsData";
 import {
@@ -25,6 +26,7 @@ import {
   CHANGE_GEO_JSON_COLOR_MAP,
   CHANGE_SHOW_SIDE_SHEET,
   CHANGE_PLAINS_DETAILS_DATA,
+  CHANGE_STREET_MODE,
 } from "../types";
 import { overpassHighwayTypes } from "../../constants/overpassHighwayTypes";
 
@@ -60,7 +62,7 @@ const GeneralState = ({ children }) => {
   };
 
   const [state, dispatch] = useReducer(GeneralReducer, initialState);
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true);
   const headers = { headers: { "Content-Type": "application/json" } };
   const osmtogeojson = require("osmtogeojson");
 
@@ -70,9 +72,11 @@ const GeneralState = ({ children }) => {
     /*this functions takes a latitude and a longitude stored in a postion array and returns
     it will find the osm id that matches the given coordinates and will find the nearest city that
     to that coordinate. Then it will return all edited streets in this city.*/
-
-    console.log(position);
     const city = await getCityByCoordinates(position);
+    dispatch({
+      CHANGE_USER_LOCATION_INFO,
+      payload: { ...state.userLocationInfo, city: city },
+    });
     console.log(city);
     try {
       const returnedData = await axios.get(
@@ -95,8 +99,6 @@ const GeneralState = ({ children }) => {
     /*function to perform the api call for retrieving the street details for one particular street part by id */
     dispatch({ type: CHANGE_IS_LOADING_STREET_DETAILS_DATA, payload: true });
     try {
-      
-
       const streetDetailsData = await axios.get(
         STREET_GET_DETAILS_URL + `/${encodeURIComponent(streetId)}`,
         { streetId: streetId },
@@ -109,7 +111,7 @@ const GeneralState = ({ children }) => {
       console.log(streetDetailsData);
 
       let tmpPlaines = streetDetailsData.data.plaines;
-      let tmpStreetDetailsData = {...streetDetailsData.data};
+      let tmpStreetDetailsData = { ...streetDetailsData.data };
       delete tmpStreetDetailsData.plaines;
 
       dispatch({
@@ -126,13 +128,14 @@ const GeneralState = ({ children }) => {
       });
 
       dispatch({ type: CHANGE_IS_LOADING_STREET_DETAILS_DATA, payload: false });
-      
     } catch (error) {
       dispatch({ type: CHANGE_IS_LOADING_STREET_DETAILS_DATA, payload: false });
     }
   };
 
   const changeStreetDetailsData = (fieldToChange, newValue) => {
+    console.log( state.streetDetailsData)
+    console.log(fieldToChange, newValue);
     /*TODO: this function should be able to change a single field or all fields */
     const updatedStreetDetails = {
       ...state.streetDetailsData,
@@ -146,16 +149,20 @@ const GeneralState = ({ children }) => {
 
   const addPlain = (newPlainData) => {
     let tmpPlainData = [...state.plainsDetailsData, newPlainData];
-    console.log(tmpPlainData);
     dispatch({ type: CHANGE_PLAINS_DETAILS_DATA, payload: tmpPlainData });
   };
 
   const deletePlain = (plainIndex) => {
     let tmpPlainData = [...state.plainsDetailsData];
     tmpPlainData.splice(plainIndex, 1);
-    console.log(tmpPlainData);
     dispatch({ type: CHANGE_PLAINS_DETAILS_DATA, payload: tmpPlainData });
   };
+
+  const changePlainData = (plainData) => {
+    dispatch({ type: CHANGE_PLAINS_DETAILS_DATA, payload: plainData });
+
+
+  }
 
   const changePlainsDetailsData = (plainIndex, fieldId, newValue) => {
     let tmpPlainData = [...state.plainsDetailsData];
@@ -171,6 +178,19 @@ const GeneralState = ({ children }) => {
       payload: tmpPlainData,
     });
   };
+
+  const resetStreetData = () => {
+    dispatch({
+      type: CHANGE_PLAINS_DETAILS_DATA,
+      payload: {},
+    });
+
+    dispatch({
+      type: CHANGE_STREET_DETAILS_DATA,
+      payload: {}
+    });
+
+  }
 
   const sendStreetDetailsData = async (streetId) => {
     /*TODO return if streetDetailsData is empty*/
@@ -288,10 +308,6 @@ const GeneralState = ({ children }) => {
     try {
       let streetRef = await getOsmStreetRef(streetId);
 
-      //Todo city should be saved somewhere more globally to prevent unnecessary requests
-      let cityName = await getCityByCoordinates(
-        state.userLocationInfo.position
-      );
       let boundingBox = [
         ...state.userLocationInfo.bounds[0],
         ...state.userLocationInfo.bounds[1],
@@ -311,18 +327,36 @@ const GeneralState = ({ children }) => {
         (feature) => feature.geometry.type === "LineString"
       );
       console.log(completeStreet);
-
+      const completeStreetId = await getCompleteStreetId(streetId);
       changeSelectedCompleteStreet({
         data: completeStreet,
-        streetId: `${streetRef + cityName}`,
+        streetId: await getCompleteStreetId(streetId),
       });
 
-      return completeStreet;
+      return completeStreetId;
     } catch (error) {
       showUserMessage({
         messageType: "ERROR",
         message: error.message,
       });
+    }
+  };
+
+  const getCompleteStreetId = async (streetId) => {
+    try {
+      let streetRef = await getOsmStreetRef(streetId);
+      let cityName = await getCityByCoordinates(
+        state.userLocationInfo.position
+      );
+
+      //remove white spaces from the completeStreetId
+      let completeStreetId = `${streetRef + cityName}`
+        .replace(/\s/g, "")
+        .toLowerCase();
+
+      return completeStreetId;
+    } catch (error) {
+      console.log(error);
     }
   };
 
@@ -343,20 +377,24 @@ const GeneralState = ({ children }) => {
 
   const changeStreetClickedPosition = (latlng) => {
     dispatch({ type: CHANGE_STREET_CLICKED_POSITION, payload: latlng });
-
-    changeShowStreetDetailInformation();
   };
 
   const changeSelectedCompleteStreet = (completeStreetGeoJson) => {
+    console.log(completeStreetGeoJson);
     dispatch({
       type: CHANGE_SELECTED_COMPLETE_STREET,
       payload: completeStreetGeoJson,
     });
+
+    dispatch({
+      type: CHANGE_PLAINS_DETAILS_DATA,
+      payload: plainFormFields,
+    });
   };
 
-  const changeShowStreetDetailInformation = () => {
+  const changeShowStreetDetailInformation = (status) => {
     /*change function for setting the boolean variabel for showing the detail modal */
-    dispatch({ type: CHANGE_SHOW_STREET_DETAIL_INFORMATION, payload: true });
+    dispatch({ type: CHANGE_SHOW_STREET_DETAIL_INFORMATION, payload: status });
   };
 
   const ChangeIsLoadingStreetDetailsData = (status) => {
@@ -378,6 +416,13 @@ const GeneralState = ({ children }) => {
 
   const changeShowSideSheet = (showSideSheet) => {
     dispatch({ type: CHANGE_SHOW_SIDE_SHEET, payload: showSideSheet });
+  };
+
+  const changeStreetMode = (streetMode) => {
+    dispatch({
+      type: CHANGE_STREET_MODE,
+      payload: streetMode,
+    });
   };
 
   /************************************************* utility *********************************************/
@@ -431,7 +476,7 @@ const GeneralState = ({ children }) => {
   const copyStreetDetailData = async (streetDetailData) => {
     if ("clipboard" in navigator) {
       //this delete statements are very ugly code should be refactored in the future
-      let tmpStreetDetailsData = {...streetDetailData};
+      let tmpStreetDetailsData = { ...streetDetailData };
       delete tmpStreetDetailsData._id;
 
       delete tmpStreetDetailsData.streetId;
@@ -441,9 +486,6 @@ const GeneralState = ({ children }) => {
       delete tmpStreetDetailsData.city;
 
       delete tmpStreetDetailsData.osmDetails;
-
-
-      
 
       await navigator.clipboard.writeText(
         JSON.stringify({
@@ -468,7 +510,7 @@ const GeneralState = ({ children }) => {
     try {
       let pastedData = await navigator.clipboard.readText();
       pastedData = JSON.parse(pastedData);
-      
+
       //there is some room where street id, city and latlng from the old street details are copied and pasted as well
       //this has no effect on the functionality but it is not the best style
       dispatch({
@@ -526,6 +568,13 @@ out skel qt; */
     return query;
   };
 
+  const arrayToObject = (array, key) => {
+    var newObject = {};
+    for (var index = 0; index < array.length; ++index)
+      newObject[key ? array[index][key] : index] = array[index];
+    return newObject;
+  };
+
   return (
     <GeneralContext.Provider
       value={{
@@ -552,6 +601,11 @@ out skel qt; */
         changeShowSideSheet: changeShowSideSheet,
         changeSelectedCompleteStreet: changeSelectedCompleteStreet,
         hasValues: hasValues,
+        changeStreetMode: changeStreetMode,
+        getCompleteStreetId: getCompleteStreetId,
+        arrayToObject: arrayToObject,
+        resetStreetData: resetStreetData,
+        changePlainData:changePlainData,
         showSideSheet: state.showSideSheet,
         userLocationInfo: state.userLocationInfo,
         streetData: state.streetData,
@@ -565,6 +619,7 @@ out skel qt; */
         plainsDetailsData: state.plainsDetailsData,
         allEditedStreetsInCity: state.allEditedStreetsInCity,
         geoJsonColorMap: state.geoJsonColorMap,
+        streetMode: state.streetMode,
         selectedCompleteStreet: state.selectedCompleteStreet,
       }}
     >

@@ -1,36 +1,29 @@
 import { GeoJSON } from "react-leaflet";
-import { useContext} from "react";
+import { useContext } from "react";
 import GeneralContext from "../../context/general-context/GeneralContext";
+import CompleteStreetContext from "../../context/complete-street-context/CompleteStreetContext";
 
 const MyGeoJson = (props) => {
-  //TODO make this component generic no export every specific logic
   const handleOnClick = (e) => {
-    changeStreetClickedPosition({ latlng: e.latlng, streetId: streetId });
-    
-    getStreetDetailsData(streetId);
+    onClick(e, streetId);
   };
 
-  
-  const { data, children, streetId, style } = props;
- 
-  const {
-    changeStreetClickedPosition,
-    getStreetDetailsData,
-    geoJsonColorMap,
-  } = useContext(GeneralContext);
- 
- 
-  const setStyle = () =>{
-    return geoJsonColorMap.get(streetId);
+  const { data, children, streetId, style, onClick } = props;
 
-  }
+  const { geoJsonColorMap } = useContext(GeneralContext);
+
+  const { showCustomStreetSections } = useContext(CompleteStreetContext);
+
+  const setStyle = () => {
+    return geoJsonColorMap.get(streetId);
+  };
 
   return (
     <>
       <GeoJSON
         data={data}
-        eventHandlers={{ click: handleOnClick }}
-        style={setStyle}
+        eventHandlers={{ click: onClick && handleOnClick }}
+        style={style ? style : setStyle}
       >
         {children}
       </GeoJSON>
