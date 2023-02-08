@@ -1,5 +1,4 @@
 var plainFormFields = [
-    { name: "Fläche", id: "area", type: "text", value: "" },
-    { name: "Dicke", id: "thickness", type: "text", value: "" },
-    { name: "Schichttyp", id: "layerTyp", type: "text", value: "" },
+    { name: "Fläche (m^2)", id: "area", type: "text", value: 0 },
+    { name: "Dicke (m)", id: "thickness", type: "text", value: 0 },
   ];export default plainFormFields;

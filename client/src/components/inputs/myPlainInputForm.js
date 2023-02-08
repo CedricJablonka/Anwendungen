@@ -4,22 +4,26 @@ import GeneralContext from "../../context/general-context/GeneralContext";
 import plainFormFields from "../../constants/plainFormFields";
 import MyInput from "./myInput";
 import MyCollapseContainer from "../container/myCollapseContainer";
+import streetLayerTypes from "../../constants/streetlayerTypes";
+import MySelect from "./mySelect";
 
-const MyPlainInputForm = () => {
-  const { plainsDetailsData, changePlainsDetailsData, addPlain, deletePlain } =
+const MyPlainInputForm = (props) => {
+  const { plainsDetailsData, changePlainsDetailsData, addPlain, deletePlain} =
     useContext(GeneralContext);
-
+  const {onChange, plainData} = props;
   const onAddPlain = () => {
-    plainsDetailsData.length <= 10 && addPlain({ mass: "", area: "", thickness: "", layerTyp: "" });
+    plainsDetailsData?.length <= 10 &&
+      addPlain({ mass: "", area: "", thickness: "", layerType: 1.6 });
   };
 
-  const onChangePlain = (plaineIndex, fieldId, newValue) => {
+  const onChangePlain = (e,plaineIndex, fieldId, newValue) => {
     changePlainsDetailsData(plaineIndex, fieldId, newValue);
   };
 
   const onDeletePlain = (plainIndex) => {
     deletePlain(plainIndex);
   };
+
 
   return (
     <>
@@ -29,34 +33,40 @@ const MyPlainInputForm = () => {
             Ebenen
           </Heading>
         </Pane>
-        {plainsDetailsData.length !== 0 ? (
+        {plainsDetailsData?.length !== 0 ? (
           <Pane>
-            {[...Array(plainsDetailsData.length)].map((n, plainIndex) => (
+            {[...Array(plainsDetailsData?.length)].map((n, plainIndex) => (
               <Pane key={plainIndex}>
                 <MyCollapseContainer
                   status={false}
                   index={plainIndex}
                   onDelete={onDeletePlain}
                 >
-                  {plainFormFields.map((formField, index) => {
+                  {plainFormFields?.map((formField, index) => {
                     {
                       /* This is the loop for getting all the fields for one particular plane */
                     }
                     return (
                       <MyInput
-                        onChange={onChangePlain}
-                        label={formField.name}
-                        key={formField.name}
-                        inputId={formField.id}
+                        label={formField?.name}
+                        key={formField?.name}
+                        inputId={formField?.id}
                         plainIndex={plainIndex}
+                        onChange = {onChange}
                         initialValue={
                           plainsDetailsData[plainIndex][formField.id]
                         }
                       />
                     );
                   })}
+                  <MySelect
+                    optionsArray={streetLayerTypes}
+                    label={"Schichttyp"}
+                    inputId={"layerType"}
+                    index={plainIndex}
+                  />
                   <MyInput
-                    label="Masse"
+                    label="Masse (t)"
                     key="mass"
                     inputId={"mass"}
                     initialValue={plainsDetailsData[plainIndex]["mass"]}

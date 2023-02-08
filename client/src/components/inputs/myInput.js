@@ -1,18 +1,12 @@
-import { useContext } from "react";
 import { TextInput, FormField, Pane } from "evergreen-ui";
-import GeneralContext from "../../context/general-context/GeneralContext";
 
 const MyInput = (props) => {
-  const { label, initialValue, inputId, isDisabled, plainIndex } = props;
-  const { changeStreetDetailsData, changePlainsDetailsData } =
-    useContext(GeneralContext);
+  const { label, initialValue, inputId, isDisabled, plainIndex, onChange } = props;
 
   const handleChange = (e) => {
-    if (plainIndex !== undefined) {
-      changePlainsDetailsData(plainIndex, inputId, e.target.value);
-    } else {
-      changeStreetDetailsData(inputId, e.target.value);
-    }
+    console.log(e.target.value.toString())
+    onChange && onChange(e.target.value, plainIndex, inputId);
+   
   };
   return (
     <Pane marginTop={5}>

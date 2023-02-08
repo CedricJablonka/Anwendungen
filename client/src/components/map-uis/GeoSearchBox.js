@@ -18,7 +18,7 @@ const GeoSearchBox = (props) => {
     });
 
     function showLocation(e) {
-      console.log(e);
+
       changeUserLocationInfo({
         position: [e.location.y, e.location.x],
         lat: e.location.y,

@@ -2,10 +2,9 @@ export var streetDetailsData= {
     hasValues: false,
     streetId: "",
     usage: "",
-    axleTyp: "",
+    axleType: "",
     streetType: "",
     installationYear: "",
-    state: "",
     plaines: [],
     
 

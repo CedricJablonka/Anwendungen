@@ -11,6 +11,7 @@ import MyInput from "../inputs/myInput";
 import MyPlainInputForm from "../inputs/myPlainInputForm";
 import { useContext } from "react";
 import GeneralContext from "../../context/general-context/GeneralContext";
+import CompleteStreetContext from "../../context/complete-street-context/CompleteStreetContext";
 import { useMapEvents } from "react-leaflet";
 import {
   MdOutlineAddRoad,
@@ -19,18 +20,23 @@ import {
 } from "react-icons/md";
 
 const MyForm = (props) => {
-  const { streetId } = props;
+  const { streetId, onClose, formData, onChange, onSubmit, onGetCompleteStreet, plainData } = props;
+  //the form data prop is the prop the form is operating on
+  //the form data needs to have the fields defined in the streetFormFields Data document
+  //an the plainFormFields document
   const {
-    streetDetailsData,
     isLoadingStreetDetailsData,
     sendStreetDetailsData,
     copyStreetDetailData,
     pasteStreetDetailData,
     changeGeoJsonColor,
     allEditedStreetsInCity,
-    getOverpassCompleteWay,
-    changeShowSideSheet,
+    streetMode,
   } = useContext(GeneralContext);
+
+  const { sendCompleteStreetData } = useContext(
+    CompleteStreetContext
+  );
 
   const iconSize = 20;
 
@@ -45,22 +51,19 @@ const MyForm = (props) => {
       changeGeoJsonColor({ streetId: streetId, color: "orange" });
     },
     popupclose: (e) => {
-      console.log("closed");
+      handleOnClose();
       streetId in allEditedStreetsInCity
         ? changeGeoJsonColor({ streetId: streetId, color: "green" })
         : changeGeoJsonColor({ streetId: streetId, color: "#3388ff" });
     },
   });
 
-
   const handleCopy = () => {
-    copyStreetDetailData(streetDetailsData);
+    copyStreetDetailData(formData);
   };
 
   const handleGetCompleteStreet = async () => {
-    const selectedCompleteStreet = await getOverpassCompleteWay(streetId);
-    console.log(selectedCompleteStreet);
-    changeShowSideSheet(true);
+    await onGetCompleteStreet(streetId);
   };
 
   const handlePaste = () => {
@@ -68,8 +71,17 @@ const MyForm = (props) => {
   };
 
   const handleSubmit = (e) => {
+
     e.preventDefault();
-    sendStreetDetailsData(streetId);
+    if (streetMode === "SINGLE") {
+      sendStreetDetailsData(streetId);
+    } else if (streetMode === "COMPLETE") {
+      onSubmit ? onSubmit() : sendCompleteStreetData();
+    }
+  };
+
+  const handleOnClose = (e) => {
+    onClose && onClose();
   };
 
   return (
@@ -78,8 +90,10 @@ const MyForm = (props) => {
         <Pane style={{ overflow: "auto" }}>
           <Pane display="flex" flexWrap="wrap">
             <Pane display="flex" flexWrap="wrap">
-              <h3>{`${streetDetailsData.streetName} `}</h3>
-              <h3>{`|Abschnitt Id: ${streetId}`}</h3>
+              <h3>{`${
+                formData?.streetName ? formData.streetName + "| " : ""
+              } `}</h3>
+              <h3>{`Abschnitt Id: ${streetId}`}</h3>
             </Pane>
 
             {streetFormFieldData.map((formField) => {
@@ -88,12 +102,13 @@ const MyForm = (props) => {
                   label={formField.name}
                   key={formField.name}
                   inputId={formField.id}
-                  initialValue={streetDetailsData[formField.id]}
+                  initialValue={formData[formField.id]}
+                  onChange={onChange}
                 />
               );
             })}
           </Pane>
-          <MyPlainInputForm />
+          <MyPlainInputForm onChange={onChange} plainData={plainData} />
           <Pane display="flex" justifyContent="center" marginTop={10}>
             <Button appearance="primary" onClick={handleSubmit}>
               Submit
@@ -112,13 +127,15 @@ const MyForm = (props) => {
                 marginLeft={majorScale(2)}
               />
             </Tooltip>
-            <Tooltip content="Get complete Street">
-              <IconButton
-                icon={<MdOutlineAddRoad size={iconSize} />}
-                onClick={handleGetCompleteStreet}
-                marginLeft={majorScale(2)}
-              />
-            </Tooltip>
+            {onGetCompleteStreet && (
+              <Tooltip content="Get complete Street">
+                <IconButton
+                  icon={<MdOutlineAddRoad size={iconSize} />}
+                  onClick={handleGetCompleteStreet}
+                  marginLeft={majorScale(2)}
+                />
+              </Tooltip>
+            )}
           </Pane>
         </Pane>
       ) : (

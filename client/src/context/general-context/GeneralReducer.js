@@ -14,6 +14,8 @@ import {
   CHANGE_SELECTED_COMPLETE_STREET,
   CHANGE_SHOW_SIDE_SHEET,
   CHANGE_PLAINS_DETAILS_DATA,
+  ADD_CUSTOM_STREET_SECTION,
+  CHANGE_STREET_MODE,
 } from "../types";
 
 const GeneralReducer = (prevState, { type, payload }) => {
@@ -62,6 +64,12 @@ const GeneralReducer = (prevState, { type, payload }) => {
         streetClickedPosition: payload,
       };
 
+    case CHANGE_STREET_MODE:
+      return {
+        ...prevState,
+        streetMode: payload,
+      };
+
     case CHANGE_STREET_DETAILS_DATA:
       return {
         ...prevState,
@@ -79,7 +87,7 @@ const GeneralReducer = (prevState, { type, payload }) => {
       };
 
     case CHANGE_IS_LOADING_STREET_DETAILS_DATA:
-      console.log(payload)
+
       return {
         ...prevState,
         isLoadingStreetDetailsData: payload,
@@ -106,6 +114,10 @@ const GeneralReducer = (prevState, { type, payload }) => {
 
     case CHANGE_SHOW_SIDE_SHEET:
       return { ...prevState, showSideSheet: payload };
+
+    case ADD_CUSTOM_STREET_SECTION:
+      return { ...prevState, completeStreetData: payload };
+
     default:
       return prevState;
   }

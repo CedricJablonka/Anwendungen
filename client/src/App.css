@@ -9,12 +9,19 @@
     background: white !important;
 }
 
-.leaflet-touch .leaflet-bar a{
 
-    width: 100% !important;
-    height: 0 !important;
-}
-
+  a.leaflet-bar-part.leaflet-bar-part-single{
+    height: 0;
+  }
 *{
     font-family: "SF UI Text", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
 }
+
+
+
+
+
+
+
+
+
