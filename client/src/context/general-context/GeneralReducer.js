@@ -87,7 +87,7 @@ const GeneralReducer = (prevState, { type, payload }) => {
       };
 
     case CHANGE_IS_LOADING_STREET_DETAILS_DATA:
-      console.log(payload);
+
       return {
         ...prevState,
         isLoadingStreetDetailsData: payload,

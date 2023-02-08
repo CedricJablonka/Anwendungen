@@ -10,6 +10,7 @@ const MyCompleteStreetOptions = (props) => {
     onUnselectCompleteStreet,
     onShowAllStreetSections,
     onHideAllStreetSections,
+    completeStreetId
   } = props;
   const handleShowAllStreetSections = () => {
     onShowAllStreetSections();
@@ -24,7 +25,8 @@ const MyCompleteStreetOptions = (props) => {
   };
 
   return (
-    <Pane display="flex" justifyContent="flex-end" marginBottom="8px">
+    <Pane display="flex" justifyContent="flex-end" marginBottom="8px" alignItems="center">
+      <h3>{completeStreetId}</h3>
       <MyIconButton
         tooltipContent="Remove Selected Complete Street"
         icon={<TbRoadOff size={20} />}

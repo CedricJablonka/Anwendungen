@@ -11,6 +11,7 @@ import MyForm from "../components/container/myForm";
 import MyCompleteStreetForm from "../components/container/myCompleteStreetForm";
 import MyStreetSections from "../components/map-uis/myStreetSections";
 import MyCompleteStreetOptions from "../components/ui-elements/myCompleteStreetOptions";
+import MyMapDrawer from "../components/map-uis/myMapDrawer";
 
 const MainPage = () => {
   const {
@@ -30,27 +31,43 @@ const MainPage = () => {
     getOverpassCompleteWay,
     changeStreetMode,
     streetMode,
-    changeShowStreetDetailInformation
+    changeShowStreetDetailInformation,
   } = useContext(GeneralContext);
- 
+
   const {
     currentCustomStreetSectionId,
     getCompleteStreetData,
-    changeShowCustomStreetSections
+    changeShowCustomStreetSections,
+    changeCurrentCustomStreetSectionId,
+    changeCompleteStreetData,
+    showCustomStreetSectionForm,
+    completeStreetData,
+    showCustomStreetSections
   } = useContext(CompleteStreetContext);
+
+  let completeStreetId = "";
   useEffect(() => {
     getAllEditedStreetsInCity(userLocationInfo.position);
   }, [userLocationInfo.position]);
 
+  useEffect(() => {
+    console.log(completeStreetData);
+  }, [completeStreetData]);
+
   const onUnselectCompleteStreet = () => {
+    //perform a reset on most important complete section varaibles to prevent wrong variable values when switching back to complete street mode
     changeStreetMode("SINGLE");
     changeShowCustomStreetSections(false);
+    changeCurrentCustomStreetSectionId("");
     changeSelectedCompleteStreet({});
+    changeStreetClickedPosition({
+      latlng: {},
+      streetId: "",
+    });
     //resetStreetData()
   };
 
   const onGeoJsonClick = (e, streetId) => {
-
     changeStreetClickedPosition({ latlng: e.latlng, streetId: streetId });
     changeShowStreetDetailInformation(true);
     getStreetDetailsData(streetId);
@@ -65,8 +82,10 @@ const MainPage = () => {
   };
 
   const onGetCompleteStreet = async (streetId) => {
-    const completeStreetId = await getOverpassCompleteWay(streetId);
-    await getCompleteStreetData(completeStreetId);
+    completeStreetId = await getOverpassCompleteWay(streetId);
+    const test = await getCompleteStreetData(completeStreetId);
+    changeCompleteStreetData(test);
+    console.log(completeStreetId);
     changeStreetMode("COMPLETE");
   };
 
@@ -76,14 +95,14 @@ const MainPage = () => {
 
   const onHideAllStreetSections = () => {
     changeShowCustomStreetSections(false);
-
-  }
+  };
   return (
     <>
       {streetMode === "SINGLE" && <StreetTypeSelection />}
       {/* <MySideSheet isShown={showSideSheet} />*/}
       {hasValues(selectedCompleteStreet) ? (
         <MyCompleteStreetOptions
+          completeStreetId={selectedCompleteStreet.streetId}
           onUnselectCompleteStreet={onUnselectCompleteStreet}
           onShowAllStreetSections={onShowAllStreetSections}
           onHideAllStreetSections={onHideAllStreetSections}
@@ -117,10 +136,16 @@ const MainPage = () => {
             </MyPopup>
           ) : (
             <>
-              <MyCompleteStreetForm
-                streetId={currentCustomStreetSectionId}
-                position={streetClickedPosition.latlng}
-              />
+              {showCustomStreetSectionForm && (
+                <MyCompleteStreetForm
+                  streetId={currentCustomStreetSectionId}
+                  position={streetClickedPosition.latlng}
+                  completeStreetId={completeStreetId}
+                />
+              )}
+              {streetMode === "COMPLETE" && (
+                <MyMapDrawer completeStreetId={completeStreetId} />
+              )}
             </>
           ))}
         {/*<Marker position={userLocationInfo.position}>

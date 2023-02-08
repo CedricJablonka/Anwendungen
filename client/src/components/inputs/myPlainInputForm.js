@@ -13,7 +13,7 @@ const MyPlainInputForm = (props) => {
   const {onChange, plainData} = props;
   const onAddPlain = () => {
     plainsDetailsData?.length <= 10 &&
-      addPlain({ mass: "", area: "", thickness: "", layerTyp: 1.6 });
+      addPlain({ mass: "", area: "", thickness: "", layerType: 1.6 });
   };
 
   const onChangePlain = (e,plaineIndex, fieldId, newValue) => {

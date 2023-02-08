@@ -5,7 +5,7 @@ const MySelect = (props) => {
   const { optionsArray, label, inputId, index } = props;
   const { changePlainsDetailsData } = useContext(GeneralContext);
   const handleChange = (e) => {
-    console.log(e.target.value);
+
     changePlainsDetailsData(index, inputId, e.target.value);
   };
   const unit = "m^3/t";

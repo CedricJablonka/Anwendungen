@@ -4,6 +4,7 @@ const MyInput = (props) => {
   const { label, initialValue, inputId, isDisabled, plainIndex, onChange } = props;
 
   const handleChange = (e) => {
+    console.log(e.target.value.toString())
     onChange && onChange(e.target.value, plainIndex, inputId);
    
   };

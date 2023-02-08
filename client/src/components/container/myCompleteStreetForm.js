@@ -12,56 +12,55 @@ const MyCompleteStreetForm = (props) => {
     changeShowCustomStreetSections,
     showCustomStreetSectionForm,
     changeShowCustomStreetSectionForm,
-    addCustomStreetSection,
+    changeCustomStreetSection,
     currentCustomStreetSectionId,
     completeStreetData,
     sendCompleteStreetData,
     changeCustomStreetSectionPlainData,
   } = useContext(CompleteStreetContext);
 
+  const { changePlainData } = useContext(GeneralContext);
 
-  const {changePlainData} = useContext(GeneralContext);
-
-  const { position } = props;
-
+  const { position, completeStreetId } = props;
   let tmpSingleStreetSectionData = {};
-  const [customStreetSectionData, setCustomStreetSectionData] = useState(
-    {...tmpSingleStreetSectionData}
-  );
-
-        
+  const [customStreetSectionData, setCustomStreetSectionData] = useState({
+    ...tmpSingleStreetSectionData,
+  });
 
   useEffect(() => {
-    console.log("fired!")
-    updateCustomStreetSectionData();
-  }, [currentCustomStreetSectionId])
-  
+    //this check is necessary if you switch from single section mode to complete section mode and a custom street section id has not been defined yet
+    currentCustomStreetSectionId !== "" && updateCustomStreetSectionData();
+  }, [currentCustomStreetSectionId]);
 
-  
   const updateCustomStreetSectionData = () => {
-    console.log(currentCustomStreetSectionId)
-    tmpSingleStreetSectionData =
-    completeStreetData?.customStreetSections?.length === 0
-      ? {
-          ...completeStreetDataFields,
-          customStreetSectionId: uuid().slice(0, 8),
-        }
-      : {
-          ...completeStreetData?.customStreetSections[
-            currentCustomStreetSectionId
-          ],
-        };
-        console.log(tmpSingleStreetSectionData);
-    
-    tmpSingleStreetSectionData?.plainData && changePlainData(tmpSingleStreetSectionData?.plainData);
-          
+    console.log(currentCustomStreetSectionId);
+    console.log(completeStreetData)
+    //todo there is a case missing, if complete street has sections and a new section is created
+    /*tmpSingleStreetSectionData =
+      completeStreetData?.customStreetSections?.length === 0
+        ? {
+            ...completeStreetDataFields,
+            customStreetSectionId: uuid().slice(0, 8),
+          }
+        : {
+            ...completeStreetData?.customStreetSections[
+              currentCustomStreetSectionId
+            ],
+          };*/
+
+    tmpSingleStreetSectionData = {
+      ...completeStreetData?.customStreetSections[currentCustomStreetSectionId],
+    };
+    console.log(tmpSingleStreetSectionData);
+    tmpSingleStreetSectionData?.plainData &&
+      changePlainData(tmpSingleStreetSectionData?.plainData);
+
     setCustomStreetSectionData((pre) => ({
       ...pre,
-      ...tmpSingleStreetSectionData
+      ...tmpSingleStreetSectionData,
     }));
   };
 
-  console.log(customStreetSectionData);
   const onCustomStreetSectionChange = (newValue, fieldId) => {
     setCustomStreetSectionData((pre) => ({
       ...pre,
@@ -70,11 +69,14 @@ const MyCompleteStreetForm = (props) => {
   };
 
   const onSubmit = async () => {
-    console.log(customStreetSectionData);
-    const completeStreetData = addCustomStreetSection(customStreetSectionData);
-    console.log(completeStreetData);
-
-    await sendCompleteStreetData(completeStreetData);
+    console.log(customStreetSectionData)
+    console.log(currentCustomStreetSectionId)
+    const tmpCompleteStreetData = changeCustomStreetSection(
+      currentCustomStreetSectionId,
+      customStreetSectionData
+    );
+      console.log(tmpCompleteStreetData)
+    await sendCompleteStreetData(tmpCompleteStreetData);
   };
 
   const handleShowAllStreetSections = () => {
@@ -100,22 +102,19 @@ const MyCompleteStreetForm = (props) => {
 
   return (
     <>
-      {showCustomStreetSectionForm && (
-        <MyPopup position={position}>
+      <MyPopup position={position}>
+        <Pane>
           <Pane>
-            <Pane>
-              <MyForm
-                onClose={onCustomStreetSectionFormClose}
-                formData={customStreetSectionData}
-                streetId={currentCustomStreetSectionId}
-                onChange={onFormChange}
-                onSubmit={onSubmit}
-              />
-            </Pane>
+            <MyForm
+              onClose={onCustomStreetSectionFormClose}
+              formData={customStreetSectionData}
+              streetId={currentCustomStreetSectionId}
+              onChange={onFormChange}
+              onSubmit={onSubmit}
+            />
           </Pane>
-        </MyPopup>
-      )}
-      <MyMapDrawer />
+        </Pane>
+      </MyPopup>
     </>
   );
 };

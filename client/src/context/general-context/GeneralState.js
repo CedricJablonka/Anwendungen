@@ -77,7 +77,7 @@ const GeneralState = ({ children }) => {
       CHANGE_USER_LOCATION_INFO,
       payload: { ...state.userLocationInfo, city: city },
     });
-    console.log(city);
+
     try {
       const returnedData = await axios.get(
         GET_ALL_STREET_DETAILS_WITHIN_City_URL + `${encodeURIComponent(city)}`,
@@ -108,7 +108,7 @@ const GeneralState = ({ children }) => {
       //maybe there is a way to combine plainsDetailsData and streetDetailsData
       //for now two dispatches are needed
 
-      console.log(streetDetailsData);
+
 
       let tmpPlaines = streetDetailsData.data.plaines;
       let tmpStreetDetailsData = { ...streetDetailsData.data };
@@ -134,8 +134,6 @@ const GeneralState = ({ children }) => {
   };
 
   const changeStreetDetailsData = (fieldToChange, newValue) => {
-    console.log( state.streetDetailsData)
-    console.log(fieldToChange, newValue);
     /*TODO: this function should be able to change a single field or all fields */
     const updatedStreetDetails = {
       ...state.streetDetailsData,
@@ -170,6 +168,7 @@ const GeneralState = ({ children }) => {
     let plainArea = tmpPlainData[plainIndex]["area"];
     let plainThickness = tmpPlainData[plainIndex]["thickness"];
     let layerDensity = tmpPlainData[plainIndex]["layerType"];
+ 
     let plainMass = plainArea * plainThickness * layerDensity;
 
     tmpPlainData[plainIndex]["mass"] = plainMass;
@@ -182,7 +181,7 @@ const GeneralState = ({ children }) => {
   const resetStreetData = () => {
     dispatch({
       type: CHANGE_PLAINS_DETAILS_DATA,
-      payload: {},
+      payload: [{ mass: "", area: "", thickness: "", layerType: 1.6 }],
     });
 
     dispatch({
@@ -205,7 +204,6 @@ const GeneralState = ({ children }) => {
       city: await getCityByCoordinates(state.userLocationInfo.position),
       osmDetails: await getOsmStreetInformation(streetId),
     };
-    console.log(preparedStreetDetailsData);
 
     try {
       const response = await axios.post(
@@ -238,7 +236,6 @@ const GeneralState = ({ children }) => {
         )}&lon=${encodeURIComponent(lng)}`,
         headers
       );
-      console.log(returnedData.data.address.city);
       return returnedData.data.address.city;
     } catch (error) {}
   };
@@ -278,14 +275,12 @@ const GeneralState = ({ children }) => {
         "https://www.overpass-api.de/api/interpreter",
         query
       );
-      console.log(returnedData.data);
       //converts the osm data into an array of geoJSON objects
 
       let geoJsonConversion = osmtogeojson(returnedData.data);
       /*console.log("complete Conversion: ", geoJsonConversion)
       console.log("all nodes: ",osmtogeojson({...returnedData.data, elements: nodeElements}))
       console.log("all ways: ",osmtogeojson({...returnedData.data, elements: wayElements}))*/
-      console.log(geoJsonConversion);
       await createGeoJsonColorMap({
         geoJsonData: geoJsonConversion,
         color: "#3388ff",
@@ -326,7 +321,6 @@ const GeneralState = ({ children }) => {
       completeStreet = completeStreet.features.filter(
         (feature) => feature.geometry.type === "LineString"
       );
-      console.log(completeStreet);
       const completeStreetId = await getCompleteStreetId(streetId);
       changeSelectedCompleteStreet({
         data: completeStreet,
@@ -380,7 +374,6 @@ const GeneralState = ({ children }) => {
   };
 
   const changeSelectedCompleteStreet = (completeStreetGeoJson) => {
-    console.log(completeStreetGeoJson);
     dispatch({
       type: CHANGE_SELECTED_COMPLETE_STREET,
       payload: completeStreetGeoJson,
@@ -407,7 +400,6 @@ const GeneralState = ({ children }) => {
 
   const changeHighwayTypeSelection = (highwayType) => {
     /*this function is used for modifying the overpass query depending on the users selected street types */
-    console.log(highwayType);
     dispatch({
       type: CHANGE_HIGHWAY_TYPE_SELECTION,
       payload: { highwayType: highwayType },
@@ -448,7 +440,6 @@ const GeneralState = ({ children }) => {
     try {
       const position = [state.userLocationInfo.lat, state.userLocationInfo.lng];
 
-      console.log(position);
 
       let allEditedStreetsInCity = await getAllEditedStreetsInCity(position);
 

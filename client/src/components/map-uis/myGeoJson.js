@@ -4,11 +4,13 @@ import GeneralContext from "../../context/general-context/GeneralContext";
 import CompleteStreetContext from "../../context/complete-street-context/CompleteStreetContext";
 
 const MyGeoJson = (props) => {
+  
+
+  const { data, children, streetId, style, onClick } = props;
+
   const handleOnClick = (e) => {
     onClick(e, streetId);
   };
-
-  const { data, children, streetId, style, onClick } = props;
 
   const { geoJsonColorMap } = useContext(GeneralContext);
 

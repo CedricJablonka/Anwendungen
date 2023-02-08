@@ -1,4 +1,4 @@
-import React, { useReducer, useContext } from "react";
+import React, { useReducer, useContext, useEffect } from "react";
 import CompleteStreetReducer from "./CompleteStreetReducer";
 import CompleteStreetContext from "./CompleteStreetContext";
 import GeneralContext from "../general-context/GeneralContext";
@@ -22,7 +22,7 @@ import {
 
 const CompleteStreetState = ({ children }) => {
   const initialState = {
-    completeStreetData: {customStreetSections: []},
+    completeStreetData: { customStreetSections: [] },
     currentCustomStreetSectionCoordinates: [],
     showCustomStreetSections: false,
     showCustomStreetSectionForm: false,
@@ -41,8 +41,16 @@ const CompleteStreetState = ({ children }) => {
   const headers = { headers: { "Content-Type": "application/json" } };
   const city = userLocationInfo.city;
 
+
+  useEffect(() => {
+    console.log(state.completeStreetData);
+    
+  }, [state.completeStreetData])
+  
+
   //when a new custom street section is created this function can be used to add it to the complete street
   const addCustomStreetSection = (customStreetSection) => {
+    console.log(state.completeStreetData);
     const customStreetSectionId = customStreetSection.customStreetSectionId;
     let tmpCompleteStreetData = {
       ...state.completeStreetData,
@@ -51,7 +59,6 @@ const CompleteStreetState = ({ children }) => {
         [customStreetSectionId]: {
           ...customStreetSection,
           plainData: plainsDetailsData,
-          coordinates: state.currentCustomStreetSectionCoordinates,
         },
       },
     };
@@ -72,8 +79,6 @@ const CompleteStreetState = ({ children }) => {
   };
 
   const getCompleteStreetData = async (completeStreetId) => {
-    console.log(completeStreetId);
-
     try {
       const completeStreetData = await axios.get(
         GET_COMPLETE_STREET_DATA_URL +
@@ -82,24 +87,25 @@ const CompleteStreetState = ({ children }) => {
         headers
       );
 
-      console.log(completeStreetData?.data);
       dispatch({
         type: CHANGE_COMPLETE_STREET_DATA,
         payload: completeStreetData?.data,
       });
+
+      return completeStreetData?.data;
     } catch (error) {
       console.log(error);
     }
   };
 
   const sendCompleteStreetData = async (completeStreetData) => {
-    console.log(completeStreetData);
     const tmpCompleteStreetData = {
       ...completeStreetData,
       geoJson: toGeoJson(completeStreetData.customStreetSections),
       completeStreetId: selectedCompleteStreet.streetId,
     };
-    console.log(tmpCompleteStreetData.geoJson);
+    console.log(tmpCompleteStreetData);
+
     try {
       const completeStreetData = await axios.post(
         SEND_COMPLETE_STREET_DATA_URL,
@@ -108,8 +114,8 @@ const CompleteStreetState = ({ children }) => {
         },
         headers
       );
-      console.log(completeStreetData.data.data);
-      changeCompleteStreetData(completeStreetData.data);
+
+      changeCompleteStreetData(completeStreetData.data.data);
       showUserMessage({
         message: completeStreetData.data.message,
         messageType: "SUCCESS",
@@ -190,11 +196,13 @@ const CompleteStreetState = ({ children }) => {
     updatedStreetSection
   ) => {
     const tmpCustomStreetSections = {
-      ...state.completeStreetData.customStreetSection,
-      [customStreetSectionId]: updatedStreetSection,
-      plainData: plainsDetailsData,
-      coordinates: state.currentCustomStreetSectionCoordinates,
+      ...state.completeStreetData.customStreetSections,
+      [customStreetSectionId]: {
+        ...updatedStreetSection,
+        plainData: plainsDetailsData,
+      },
     };
+
     const tmpCompleteStreetData = {
       ...state.completeStreetData,
       customStreetSections: tmpCustomStreetSections,
@@ -234,6 +242,8 @@ const CompleteStreetState = ({ children }) => {
         changeCurrentCustomStreetSectionId: changeCurrentCustomStreetSectionId,
         changeCustomStreetSectionPlainData: changeCustomStreetSectionPlainData,
         changeCustomStreetSection: changeCustomStreetSection,
+        changeCompleteStreetData: changeCompleteStreetData,
+        state: state,
         completeStreetData: state.completeStreetData,
         showCustomStreetSections: state.showCustomStreetSections,
         showCustomStreetSectionForm: state.showCustomStreetSectionForm,

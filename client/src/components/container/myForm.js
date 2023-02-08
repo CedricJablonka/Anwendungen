@@ -63,7 +63,7 @@ const MyForm = (props) => {
   };
 
   const handleGetCompleteStreet = async () => {
-    onGetCompleteStreet(streetId);
+    await onGetCompleteStreet(streetId);
   };
 
   const handlePaste = () => {
@@ -71,7 +71,7 @@ const MyForm = (props) => {
   };
 
   const handleSubmit = (e) => {
-    console.log(streetMode);
+
     e.preventDefault();
     if (streetMode === "SINGLE") {
       sendStreetDetailsData(streetId);
