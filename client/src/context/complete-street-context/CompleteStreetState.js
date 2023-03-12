@@ -49,8 +49,10 @@ const CompleteStreetState = ({ children }) => {
   
 
   //when a new custom street section is created this function can be used to add it to the complete street
-  const addCustomStreetSection = (customStreetSection) => {
-    console.log(state.completeStreetData);
+  const addCustomStreetSection = async (customStreetSection) => {
+    const streetData = getCompleteStreetData(state.completeStreetData.completeStreetId);
+    console.log(streetData);
+    
     const customStreetSectionId = customStreetSection.customStreetSectionId;
     let tmpCompleteStreetData = {
       ...state.completeStreetData,
