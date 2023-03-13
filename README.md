@@ -1,4 +1,5 @@
 # Anwendungen
+-Run npm install to download all dependencies
 
 -To run the Client application use npm start inside the client folder
 
